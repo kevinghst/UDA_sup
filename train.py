@@ -29,6 +29,7 @@ from utils import checkpoint
 # from utils.logger import Logger
 from tensorboardX import SummaryWriter
 from utils.utils import output_logging
+import pdb
 
 
 class Trainer(object):
@@ -78,6 +79,7 @@ class Trainer(object):
             if self.cfg.uda_mode:
                 sup_batch = [t.to(self.device) for t in next(self.sup_iter)]
                 unsup_batch = [t.to(self.device) for t in batch]
+                pdb.set_trace()
             else:
                 sup_batch = [t.to(self.device) for t in batch]
                 unsup_batch = None
