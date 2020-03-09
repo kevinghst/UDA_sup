@@ -71,7 +71,6 @@ class Trainer(object):
         # Progress bar is set by unsup or sup data
         # uda_mode == True --> sup_iter is repeated
         # uda_mode == False --> sup_iter is not repeated
-        pdb.set_trace()
         iter_bar = tqdm(self.unsup_iter, total=self.cfg.total_steps) if self.cfg.uda_mode \
               else tqdm(self.sup_iter, total=self.cfg.total_steps)
         for i, batch in enumerate(iter_bar):
