@@ -244,6 +244,8 @@ class load_data:
 
     def unsup_data_iter(self):
         unsup_dataset = self.TaskDataset(self.unsup_data_dir, self.cfg.need_prepro, self.pipeline, self.cfg.max_seq_length, self.cfg.mode, 'unsup')
+        pdb.set_trace()
+        
         unsup_data_iter = DataLoader(unsup_dataset, batch_size=self.unsup_batch_size, shuffle=self.shuffle)
         # len(unsup_dataset) = 69972
         # batch_size = 24
