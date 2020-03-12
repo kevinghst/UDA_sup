@@ -236,18 +236,24 @@ class load_data:
 
     def sup_data_iter(self):
         sup_dataset = self.TaskDataset(self.sup_data_dir, self.cfg.need_prepro, self.pipeline, self.cfg.max_seq_length, self.cfg.mode, 'sup')
+        # len(sup_dataset) = 20
         sup_data_iter = DataLoader(sup_dataset, batch_size=self.sup_batch_size, shuffle=self.shuffle)
-        pdb.set_trace()
+        # batch_size = 8
+        # len(sup_data_iter) = 3
         return sup_data_iter
 
     def unsup_data_iter(self):
         unsup_dataset = self.TaskDataset(self.unsup_data_dir, self.cfg.need_prepro, self.pipeline, self.cfg.max_seq_length, self.cfg.mode, 'unsup')
         unsup_data_iter = DataLoader(unsup_dataset, batch_size=self.unsup_batch_size, shuffle=self.shuffle)
-        pdb.set_trace()
+        # len(unsup_dataset) = 69972
+        # batch_size = 24
+        # len(unsup_data_iter) = 2916
         return unsup_data_iter
 
     def eval_data_iter(self):
         eval_dataset = self.TaskDataset(self.eval_data_dir, self.cfg.need_prepro, self.pipeline, self.cfg.max_seq_length, 'eval', 'sup')
         eval_data_iter = DataLoader(eval_dataset, batch_size=self.eval_batch_size, shuffle=False)
-        pdb.set_trace()
+        # len(eval_dataset) = 25000
+        # batch_size = 16
+        # len(eval_data_iter) = 1563
         return eval_data_iter
