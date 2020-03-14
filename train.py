@@ -68,6 +68,9 @@ class Trainer(object):
         loss_sum = 0.
         max_acc = [0., 0]   # acc, step
 
+        sup_batch_size = None
+        unsup_batch_size = None
+
         # Progress bar is set by unsup or sup data
         # uda_mode == True --> sup_iter is repeated
         # uda_mode == False --> sup_iter is not repeated
@@ -79,6 +82,9 @@ class Trainer(object):
             if self.cfg.uda_mode:
                 sup_batch = [t.to(self.device) for t in next(self.sup_iter)]
                 unsup_batch = [t.to(self.device) for t in batch]
+
+                pdb.set_trace()
+                blah = 'blah'
             else:
                 sup_batch = [t.to(self.device) for t in batch]
                 unsup_batch = None
