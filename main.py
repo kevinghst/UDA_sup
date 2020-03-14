@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+import pdb
 import fire
 
 import torch
@@ -78,6 +78,7 @@ def main(cfg, model_cfg):
             input_mask = torch.cat((input_mask, aug_input_mask), dim=0)
             
         # logits
+        pdb.set_trace()
         logits = model(input_ids, segment_ids, input_mask)
 
         # sup loss

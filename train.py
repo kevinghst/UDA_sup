@@ -90,7 +90,7 @@ class Trainer(object):
             else:
                 sup_batch = [t.to(self.device) for t in batch]
                 unsup_batch = None
-            pdb.set_trace()
+
             # update
             self.optimizer.zero_grad()
             final_loss, sup_loss, unsup_loss = get_loss(model, sup_batch, unsup_batch, global_step)
