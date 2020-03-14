@@ -83,6 +83,12 @@ class Trainer(object):
                 sup_batch = [t.to(self.device) for t in next(self.sup_iter)]
                 unsup_batch = [t.to(self.device) for t in batch]
 
+                sup_batch_size = sup_batch_size or sup_batch[0].shape[0]
+                unsup_batch_size = unsup_batch_size or unsup_batch[0].shape[0]
+
+                if sup_batch[0].shape[0] != sup_batch_size or unsup_batch[0].shape[0] != unsup_batch_size:
+                    continue
+
                 pdb.set_trace()
                 blah = 'blah'
             else:
