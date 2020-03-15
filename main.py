@@ -45,6 +45,7 @@ def main(cfg, model_cfg):
     cfg = configuration.params.from_json(cfg)                   # Train or Eval cfg
     model_cfg = configuration.model.from_json(model_cfg)        # BERT_cfg
     set_seeds(cfg.seed)
+    pdb.set_trace()
 
     # Load Data & Create Criterion
     data = load_data(cfg)
@@ -63,6 +64,18 @@ def main(cfg, model_cfg):
     trainer = train.Trainer(cfg, model, data_iter, optim.optim4GPU(cfg, model), get_device())
 
     # Training
+    def get_mixmatch_loss(model, sup_batch, unsup_batch, global_step):
+        input_ids, segment_ids, input_mask, label_ids = sup_batch
+        if unsup_batch:
+            ori_input_ids, ori_segment_ids, ori_input_mask, \
+            aug_input_ids, aug_segment_ids, aug_input_mask  = unsup_batch
+
+        batch_size = input_ids.shape[0]
+
+
+
+
+
     def get_loss(model, sup_batch, unsup_batch, global_step):
 
         # logits -> prob(softmax) -> log_prob(log_softmax)
@@ -78,7 +91,6 @@ def main(cfg, model_cfg):
             input_mask = torch.cat((input_mask, aug_input_mask), dim=0)
             
         # logits
-        pdb.set_trace()
         logits = model(input_ids, segment_ids, input_mask)
 
         # sup loss
