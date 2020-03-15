@@ -42,10 +42,10 @@ def get_tsa_thresh(schedule, global_step, num_train_steps, start, end):
 
 def main(cfg, model_cfg):
     # Load Configuration
+    pdb.set_trace()
     cfg = configuration.params.from_json(cfg)                   # Train or Eval cfg
     model_cfg = configuration.model.from_json(model_cfg)        # BERT_cfg
     set_seeds(cfg.seed)
-    pdb.set_trace()
 
     # Load Data & Create Criterion
     data = load_data(cfg)
