@@ -3,6 +3,6 @@
     "",
     "\\config"
   ],
-  "SelectedNode": "\\load_data.py",
+  "SelectedNode": "\\config\\bert_base.json",
   "PreviewInSolutionExplorer": false
 }

@@ -176,12 +176,18 @@ class Classifier(nn.Module):
         self.drop = nn.Dropout(cfg.p_drop_hidden)
         self.classifier = nn.Linear(cfg.dim, n_labels)
 
-    def forward(self, input_ids, segment_ids, input_mask):
-        h = self.transformer(input_ids, segment_ids, input_mask)
-        # only use the first h in the sequence
-        pooled_h = self.activ(self.fc(h[:, 0])) # 맨앞의 [CLS]만 뽑아내기
+    def forward(self, input_ids=None, segment_ids=None, input_mask=None, output_h=False, input_h=None):
+        if input_h is None:
+            h = self.transformer(input_ids, segment_ids, input_mask)
+            # only use the first h in the sequence
+            pooled_h = self.activ(self.fc(h[:, 0])) # 맨앞의 [CLS]만 뽑아내기
+            if output_h:
+                return pooled_h
+        else:
+            pooled_h = input_h
         logits = self.classifier(self.drop(pooled_h))
         return logits
+
 
 class Opinion_extract(nn.Module):
     """ Opinion_extraction """

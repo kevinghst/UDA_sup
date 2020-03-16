@@ -31,6 +31,77 @@ from tensorboardX import SummaryWriter
 from utils.utils import output_logging
 import pdb
 
+def linear_rampup(current, rampup_length=cfg.total_steps):
+    if rampup_length == 0:
+        return 1.0
+    else:
+        current = np.clip(current / rampup_length, 0.0, 1.0)
+        return float(current)
+
+class SemiLoss(object):
+    def __call__(self, outputs_x, targets_x, outputs_u, targets_u, current_step):
+        probs_u = torch.softmax(outputs_u, dim=1)
+
+        Lx = -torch.mean(torch.sum(F.log_softmax(outputs_x, dim=1) * targets_x, dim=1))
+        Lu = torch.mean((probs_u - targets_u)**2)
+
+        return Lx, Lu, cfg.lambda_u * linear_rampup(current_step)
+
+class WeightEMA(object):
+    def __init__(self, model, ema_model, alpha=0.999):
+        self.model = model
+        self.ema_model = ema_model
+        self.alpha = alpha
+
+        params = list(model.state_dict().values())
+        ema_params = list(ema_model.state_dict().values())
+
+        self.params = list(map(lambda x: x.float(), params))
+        self.ema_params = list(map(lambda x: x.float(), ema_params))
+        self.wd = 0.02 * cfg.lr
+
+        for param, ema_param in zip(self.params, self.ema_params):
+            param.data.copy_(ema_param.data)
+
+    def step(self):
+        one_minus_alpha = 1.0 - self.alpha
+        for param, ema_param in zip(self.params, self.ema_params):
+            ema_param.mul_(self.alpha)
+            ema_param.add_(param * one_minus_alpha)
+            # customized weight decay
+            param.mul_(1 - self.wd)
+
+def create_model(ema=False):
+    model = models.Classifier(model_cfg, len(data.TaskDataset.labels))
+    model = model.to(device)
+
+    if cfg.data_parallel:
+      model = nn.DataParallel(model)
+
+    if ema:
+        for param in model.parameters():
+            param.detach_()
+
+    return model
+
+def interleave_offsets(batch, nu):
+    groups = [batch // (nu + 1)] * (nu + 1)
+    for x in range(batch - sum(groups)):
+        groups[-x - 1] += 1
+    offsets = [0]
+    for g in groups:
+        offsets.append(offsets[-1] + g)
+    assert offsets[-1] == batch
+    return offsets
+
+
+def interleave(xy, batch):
+    nu = len(xy) - 1
+    offsets = interleave_offsets(batch, nu)
+    xy = [[v[offsets[p]:offsets[p + 1]] for p in range(nu + 1)] for v in xy]
+    for i in range(1, nu + 1):
+        xy[0][i], xy[i][i] = xy[i][i], xy[0][i]
+    return [torch.cat(v, dim=0) for v in xy]
 
 class Trainer(object):
     """Training Helper class"""
@@ -50,6 +121,7 @@ class Trainer(object):
             self.sup_iter = self.repeat_dataloader(data_iter[0])
             self.unsup_iter = self.repeat_dataloader(data_iter[1])
             self.eval_iter = data_iter[2]
+
 
     def train(self, get_loss, get_acc, model_file, pretrain_file):
         """ train uda"""

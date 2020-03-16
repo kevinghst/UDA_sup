@@ -34,11 +34,13 @@ import pdb
 
 class Trainer(object):
     """Training Helper class"""
-    def __init__(self, cfg, model, data_iter, optimizer, device):
+    def __init__(self, cfg, model, data_iter, optimizer, device, ema_model, ema_optimizer):
         self.cfg = cfg
         self.model = model
         self.optimizer = optimizer
         self.device = device
+        self.ema_model = ema_model
+        self.ema_optimizer = ema_optimizer
 
         # data iter
         if len(data_iter) == 1:
@@ -52,6 +54,11 @@ class Trainer(object):
             self.eval_iter = data_iter[2]
 
     def train(self, get_loss, get_acc, model_file, pretrain_file):
+
+        if self.cfg.uda_mode or self.cfg.mixmatch_mode:
+            ssl_mode = True
+        else:
+            ssl_mode = False
         """ train uda"""
 
         # tensorboardX logging
@@ -61,8 +68,11 @@ class Trainer(object):
         self.model.train()
         self.load(model_file, pretrain_file)    # between model_file and pretrain_file, only one model will be loaded
         model = self.model.to(self.device)
+        ema_model = self.ema_model.to(self.device) if self.ema_model else None
+
         if self.cfg.data_parallel:                       # Parallel GPU mode
             model = nn.DataParallel(model)
+            ema_model = nn.DataParallel(ema_model) if ema_model else None
 
         global_step = 0
         loss_sum = 0.
@@ -74,12 +84,12 @@ class Trainer(object):
         # Progress bar is set by unsup or sup data
         # uda_mode == True --> sup_iter is repeated
         # uda_mode == False --> sup_iter is not repeated
-        iter_bar = tqdm(self.unsup_iter, total=self.cfg.total_steps) if self.cfg.uda_mode \
+        iter_bar = tqdm(self.unsup_iter, total=self.cfg.total_steps) if ssl_mode \
               else tqdm(self.sup_iter, total=self.cfg.total_steps)
         for i, batch in enumerate(iter_bar):
                 
             # Device assignment
-            if self.cfg.uda_mode:
+            if ssl_mode:
                 sup_batch = [t.to(self.device) for t in next(self.sup_iter)]
                 unsup_batch = [t.to(self.device) for t in batch]
 
@@ -93,21 +103,24 @@ class Trainer(object):
 
             # update
             self.optimizer.zero_grad()
-            final_loss, sup_loss, unsup_loss = get_loss(model, sup_batch, unsup_batch, global_step)
+            final_loss, sup_loss, unsup_loss = get_loss(model, sup_batch, unsup_batch, global_step, ema_model)
             final_loss.backward()
             self.optimizer.step()
+
+            if self.ema_optimizer:
+                self.ema_optimizer.step()
 
             # print loss
             global_step += 1
             loss_sum += final_loss.item()
-            if self.cfg.uda_mode:
+            if ssl_mode:
                 iter_bar.set_description('final=%5.3f unsup=%5.3f sup=%5.3f'\
                         % (final_loss.item(), unsup_loss.item(), sup_loss.item()))
             else:
                 iter_bar.set_description('loss=%5.3f' % (final_loss.item()))
 
             # logging            
-            if self.cfg.uda_mode:
+            if ssl_mode:
                 logger.add_scalars('data/scalar_group',
                                     {'final_loss': final_loss.item(),
                                      'sup_loss': sup_loss.item(),

@@ -23,7 +23,40 @@ import train
 from load_data import load_data
 from utils.utils import set_seeds, get_device, _get_device, torch_device_one
 from utils import optim, configuration
+import numpy as np
 
+class SemiLoss(object):
+    def __call__(self, outputs_x, targets_x, outputs_u, targets_u, current_step):
+        probs_u = torch.softmax(outputs_u, dim=1)
+
+        Lx = -torch.mean(torch.sum(F.log_softmax(outputs_x, dim=1) * targets_x, dim=1))
+        Lu = torch.mean((probs_u - targets_u)**2)
+
+        return Lx, Lu, cfg.lambda_u * linear_rampup(current_step)
+
+class WeightEMA(object):
+    def __init__(self, model, ema_model, alpha=0.999):
+        self.model = model
+        self.ema_model = ema_model
+        self.alpha = alpha
+
+        params = list(model.state_dict().values())
+        ema_params = list(ema_model.state_dict().values())
+
+        self.params = list(map(lambda x: x.float(), params))
+        self.ema_params = list(map(lambda x: x.float(), ema_params))
+        self.wd = 0.02 * cfg.lr
+
+        for param, ema_param in zip(self.params, self.ema_params):
+            param.data.copy_(ema_param.data)
+
+    def step(self):
+        one_minus_alpha = 1.0 - self.alpha
+        for param, ema_param in zip(self.params, self.ema_params):
+            ema_param.mul_(self.alpha)
+            ema_param.add_(param * one_minus_alpha)
+            # customized weight decay
+            param.mul_(1 - self.wd)
 
 # TSA
 def get_tsa_thresh(schedule, global_step, num_train_steps, start, end):
@@ -39,6 +72,25 @@ def get_tsa_thresh(schedule, global_step, num_train_steps, start, end):
     output = threshold * (end - start) + start
     return output.to(_get_device())
 
+def interleave_offsets(batch, nu):
+    groups = [batch // (nu + 1)] * (nu + 1)
+    for x in range(batch - sum(groups)):
+        groups[-x - 1] += 1
+    offsets = [0]
+    for g in groups:
+        offsets.append(offsets[-1] + g)
+    assert offsets[-1] == batch
+    return offsets
+
+
+def interleave(xy, batch):
+    nu = len(xy) - 1
+    offsets = interleave_offsets(batch, nu)
+    xy = [[v[offsets[p]:offsets[p + 1]] for p in range(nu + 1)] for v in xy]
+    for i in range(1, nu + 1):
+        xy[0][i], xy[i][i] = xy[i][i], xy[0][i]
+    return [torch.cat(v, dim=0) for v in xy]
+
 
 def main(cfg, model_cfg):
     # Load Configuration
@@ -48,19 +100,37 @@ def main(cfg, model_cfg):
 
     # Load Data & Create Criterion
     data = load_data(cfg)
-    if cfg.uda_mode:
-        unsup_criterion = nn.KLDivLoss(reduction='none')
+
+    if cfg.uda_mode or cfg.mixmatch_mode:
         data_iter = [data.sup_data_iter(), data.unsup_data_iter()] if cfg.mode=='train' \
             else [data.sup_data_iter(), data.unsup_data_iter(), data.eval_data_iter()]  # train_eval
     else:
         data_iter = [data.sup_data_iter()]
-    sup_criterion = nn.CrossEntropyLoss(reduction='none')
+
+    ema_optimizer = None
+    ema_model = None
+
+    if cfg.uda_mode:
+        unsup_criterion = nn.KLDivLoss(reduction='none')
+        sup_criterion = nn.CrossEntropyLoss(reduction='none')
+        optimizer = optim.optim4GPU(cfg, model)
+    elif cfg.mixmatch_mode:
+        train_criterion = SemiLoss()
+        criterion = nn.CrossEntropyLoss()
+        optimizer = torch.optim.Adam(model.parameters(), lr=cfg.lr)
+        ema_optimizer= WeightEMA(model, ema_model, alpha=cfg.ema_decay)
+        ema_model = models.Classifier(model_cfg, len(data.TaskDataset.labels))
+        for param in ema_model.parameters():
+            param.detach_()
+    else:
+        sup_criterion = nn.CrossEntropyLoss(reduction='none')
+        optimizer = optim.optim4GPU(cfg, model)
     
     # Load Model
     model = models.Classifier(model_cfg, len(data.TaskDataset.labels))
 
     # Create trainer
-    trainer = train.Trainer(cfg, model, data_iter, optim.optim4GPU(cfg, model), get_device())
+    trainer = train.Trainer(cfg, model, data_iter, optimizer, get_device(), ema_model, ema_optimizer)
 
     # Training
     def get_mixmatch_loss(model, sup_batch, unsup_batch, global_step):
@@ -71,11 +141,91 @@ def main(cfg, model_cfg):
 
         batch_size = input_ids.shape[0]
 
+        # Transform label to one-hot
+        label_ids = torch.zeros(batch_size, 2).scatter_(1, label_ids.cpu().view(-1,1), 1).cuda()
+
+        with torch.no_grad():
+            # compute guessed labels of unlabel samples
+            outputs_u = model(input_ids=ori_input_ids, segment_ids=ori_segment_ids, input_mask=ori_input_mask)
+            outputs_u2 = model(input_ids=aug_input_ids, segment_ids=aug_segment_ids, input_mask=aug_input_mask)
+            p = (torch.softmax(outputs_u, dim=1) + torch.softmax(outputs_u2, dim=1)) / 2
+            pt = p**(1/cfg.T)
+            targets_u = pt / pt.sum(dim=1, keepdim=True)
+            targets_u = targets_u.detach()
+
+        concat_input_ids = [input_ids, ori_input_ids, aug_input_ids]
+        concat_seg_ids = [segment_ids, ori_segment_ids, aug_segment_ids]
+        concat_input_mask = [input_mask, ori_input_mask, aug_input_mask]
+        concat_targets = [label_ids, targets_u, targets_u]
+
+        # interleave labeled and unlabed samples between batches to get correct batchnorm calculation 
+        int_input_ids = interleave(concat_input_ids, batch_size)
+        int_seg_ids = interleave(concat_seg_ids, batch_size)
+        int_input_mask = interleave(concat_input_mask, batch_size)
+        int_targets = interleave(concat_targets, batch_size)
+
+        h_zero = model(
+            input_ids=int_input_ids[0],
+            segment_ids=int_seg_ids[0],
+            input_mask=int_input_mask[0], 
+            output_h=True
+        )
+
+        h_one = model(
+            input_ids=int_input_ids[1],
+            segment_ids=int_seg_ids[1],
+            input_mask=int_input_mask[1], 
+            output_h=True
+        )
+
+        h_two = model(
+            input_ids=int_input_ids[2],
+            segment_ids=int_seg_ids[2],
+            input_mask=int_input_mask[2], 
+            output_h=True
+        )
+
+        int_h = torch.cat([h_zero, h_one, h_two], dim=0)
+        int_targets = torch.cat([int_targets[0], int_targets[1], int_targets[2]])
+
+        l = np.random.beta(cfg.alpha, cfg.alpha)
+        l = max(l, 1-l)
+
+        idx = torch.randperm(int_h.size(0))
+
+        h_a, h_b = int_h, int_h[idx]
+        target_a, target_b = int_targets, int_targets[idx]
+
+        mixed_int_h = l * h_a + (1 - l) * h_b
+        mixed_int_target = l * target_a + (1 - l) * target_b
+
+        mixed_int_h = list(torch.split(mixed_int_h, batch_size))
+        mixed_int_targets = list(torch.split(mixed_int_target, batch_size))
+
+        logits_one = model(input_h=mixed_int_h[0])
+        logits_two = model(input_h=mixed_int_h[1])
+        logits_three = model(input_h=mixed_int_h[2])
+
+        logits = [logits_one, logits_two, logits_three]
 
 
+        # put interleaved samples back
+        logits = interleave(logits, batch_size)
+        targets = interleave(mixed_int_targets, batch_size)
 
+        logits_x = logits[0]
+        logits_u = torch.cat(logits[1:], dim=0)
 
-    def get_loss(model, sup_batch, unsup_batch, global_step):
+        targets_x = targets[0]
+        targets_u = torch.cat(targets[1:], dim=0)
+
+        #Lx, Lu, w = train_criterion(logits_x, targets_x, logits_u, targets_u, epoch+batch_idx/cfg.val_iteration)
+        Lx, Lu, w = train_criterion(logits_x, targets_x, logits_u, targets_u, global_step)
+
+        loss = Lx + w * Lu
+        return loss, Lx, Lu
+
+    def get_loss(model, sup_batch, unsup_batch, global_step, ema_model):
 
         # logits -> prob(softmax) -> log_prob(log_softmax)
 
@@ -161,7 +311,10 @@ def main(cfg, model_cfg):
         trainer.train(get_loss, None, cfg.model_file, cfg.pretrain_file)
 
     if cfg.mode == 'train_eval':
-        trainer.train(get_loss, get_acc, cfg.model_file, cfg.pretrain_file)
+        if cfg.mixmatch_mode:
+            trainer.train(get_mixmatch_loss, get_acc, cfg.model_file, cfg.pretrain_file)
+        else:
+            trainer.train(get_loss, get_acc, cfg.model_file, cfg.pretrain_file)
 
     if cfg.mode == 'eval':
         results = trainer.eval(get_acc, cfg.model_file, None)

@@ -1,10 +1,11 @@
 {
   "seed": 42,
-  "lr": 2e-5,
+  "lr": 1e-5,
   "warmup": 0.1,
   "do_lower_case": true,
   "mode": "train_eval",
-  "uda_mode": true,
+  "uda_mode": false,
+  "mixmatch_mode": true,
 
   "total_steps": 10000,
   "max_seq_length": 128,
@@ -16,6 +17,13 @@
   "tsa": "linear_schedule",
   "uda_softmax_temp": 0.85,
   "uda_confidence_thresh": 0.45,
+
+  "alpha": 0.75,
+  "lambda_u": 75,
+  "T": 0.5,
+  "ema_decay": 0.999,
+  "val_iteration": 1024,
+  "epochs": 1024,
 
   "data_parallel": true,
   "need_prepro": false,
