@@ -12,7 +12,7 @@
   "train_batch_size": 4,
   "eval_batch_size": 8,
 
-  "unsup_ratio": 3,
+  "unsup_ratio": 1,
   "uda_coeff": 1,
   "tsa": "linear_schedule",
   "uda_softmax_temp": 0.85,
