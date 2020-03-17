@@ -35,17 +35,18 @@ class SemiLoss(object):
         return Lx, Lu, cfg.lambda_u * linear_rampup(current_step)
 
 class WeightEMA(object):
-    def __init__(self, model, ema_model, alpha=0.999):
+    def __init__(self, cfg, model, ema_model, alpha=0.999):
         self.model = model
         self.ema_model = ema_model
         self.alpha = alpha
+        self.cfg = cfg
 
         params = list(model.state_dict().values())
         ema_params = list(ema_model.state_dict().values())
 
         self.params = list(map(lambda x: x.float(), params))
         self.ema_params = list(map(lambda x: x.float(), ema_params))
-        self.wd = 0.02 * cfg.lr
+        self.wd = 0.02 * self.cfg.lr
 
         for param, ema_param in zip(self.params, self.ema_params):
             param.data.copy_(ema_param.data)
@@ -123,7 +124,7 @@ def main(cfg, model_cfg):
         ema_model = models.Classifier(model_cfg, len(data.TaskDataset.labels))
         for param in ema_model.parameters():
             param.detach_()
-        ema_optimizer= WeightEMA(model, ema_model, alpha=cfg.ema_decay)
+        ema_optimizer= WeightEMA(cfg, model, ema_model, alpha=cfg.ema_decay)
     else:
         sup_criterion = nn.CrossEntropyLoss(reduction='none')
         optimizer = optim.optim4GPU(cfg, model)
