@@ -120,10 +120,10 @@ def main(cfg, model_cfg):
         train_criterion = SemiLoss()
         criterion = nn.CrossEntropyLoss()
         optimizer = torch.optim.Adam(model.parameters(), lr=cfg.lr)
-        ema_optimizer= WeightEMA(model, ema_model, alpha=cfg.ema_decay)
         ema_model = models.Classifier(model_cfg, len(data.TaskDataset.labels))
         for param in ema_model.parameters():
             param.detach_()
+        ema_optimizer= WeightEMA(model, ema_model, alpha=cfg.ema_decay)
     else:
         sup_criterion = nn.CrossEntropyLoss(reduction='none')
         optimizer = optim.optim4GPU(cfg, model)
