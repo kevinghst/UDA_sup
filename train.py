@@ -120,7 +120,7 @@ class Trainer(object):
                 iter_bar.set_description('loss=%5.3f' % (final_loss.item()))
 
             # logging            
-            if cfg.uda_mode:
+            if self.cfg.uda_mode:
                 logger.add_scalars('data/scalar_group',
                                     {'final_loss': final_loss.item(),
                                      'sup_loss': sup_loss.item(),
