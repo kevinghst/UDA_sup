@@ -230,7 +230,7 @@ class load_data:
             self.sup_batch_size = cfg.eval_batch_size
             self.shuffle = False                            # Not shuffel when eval mode
         
-        if cfg.uda_mode:                                    # Only uda_mode
+        if cfg.uda_mode or cfg.mixmatch_mode:                                    # Only uda_mode
             self.unsup_data_dir = cfg.unsup_data_dir
             self.unsup_batch_size = cfg.train_batch_size * cfg.unsup_ratio
 
