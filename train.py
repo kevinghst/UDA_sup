@@ -134,8 +134,11 @@ class Trainer(object):
             if global_step % self.cfg.save_steps == 0:
                 self.save(global_step)
 
-            if get_acc and global_step % self.cfg.check_steps == 0 and global_step > 4999:
-                results = self.eval(get_acc, None, model)
+            if get_acc and global_step % self.cfg.check_steps == 0 and global_step > 2999:
+                if self.cfg.mixmatch_mode:
+                    results = self.eval(get_acc, None, ema_model)
+                else:
+                    results = self.eval(get_acc, None, model)
                 total_accuracy = torch.cat(results).mean().item()
                 logger.add_scalars('data/scalar_group', {'eval_acc' : total_accuracy}, global_step)
                 if max_acc[0] < total_accuracy:
@@ -148,7 +151,10 @@ class Trainer(object):
                 print('The total steps have been reached')
                 print('Average Loss %5.3f' % (loss_sum/(i+1)))
                 if get_acc:
-                    results = self.eval(get_acc, None, model)
+                    if self.cfg.mixmatch_mode:
+                        results = self.eval(get_acc, None, ema_model)
+                    else:
+                        results = self.eval(get_acc, None, model)
                     total_accuracy = torch.cat(results).mean().item()
                     logger.add_scalars('data/scalar_group', {'eval_acc' : total_accuracy}, global_step)
                     if max_acc[0] < total_accuracy:
@@ -162,11 +168,12 @@ class Trainer(object):
     def eval(self, evaluate, model_file, model):
         """ evaluation function """
         if model_file:
-            self.model.eval()
             self.load(model_file, None)
             model = self.model.to(self.device)
             if self.cfg.data_parallel:
                 model = nn.DataParallel(model)
+
+        model.eval()
 
         results = []
         iter_bar = tqdm(self.sup_iter) if model_file \
