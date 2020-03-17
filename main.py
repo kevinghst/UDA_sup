@@ -240,7 +240,7 @@ def main(cfg, model_cfg):
         input_ids, segment_ids, input_mask, label_ids = sup_batch
         if unsup_batch:
             ori_input_ids, ori_segment_ids, ori_input_mask, \
-            aug_input_ids, aug_segment_ids, aug_input_mask  = unsup_batch
+            aug_input_ids, aug_segment_ids, aug_input_mask = unsup_batch
 
             input_ids = torch.cat((input_ids, aug_input_ids), dim=0)
             segment_ids = torch.cat((segment_ids, aug_segment_ids), dim=0)

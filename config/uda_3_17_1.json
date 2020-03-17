@@ -5,14 +5,14 @@
   "do_lower_case": true,
   "mode": "train_eval",
   "uda_mode": true,
-  "mixmatch_mode":  false,
+  "mixmatch_mode": false,
 
   "total_steps": 10000,
   "max_seq_length": 128,
   "train_batch_size": 4,
   "eval_batch_size": 8,
 
-  "unsup_ratio": 3,
+  "unsup_ratio": 1,
   "uda_coeff": 1,
   "tsa": "linear_schedule",
   "uda_softmax_temp": 0.85,
