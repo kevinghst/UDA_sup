@@ -22,8 +22,6 @@
   "lambda_u": 75,
   "T": 0.5,
   "ema_decay": 0.999,
-  "val_iteration": 1024,
-  "epochs": 1024,
 
   "data_parallel": true,
   "need_prepro": false,

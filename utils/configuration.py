@@ -43,6 +43,7 @@ class params(NamedTuple):
     do_lower_case: bool = True
     mode: str = None                    # train, eval, test
     uda_mode: bool = False              # True, False
+    mixmatch_mode: bool = False
     
     total_steps: int = 100000           # total_steps >= n_epcohs * n_examples / 3
     max_seq_length: int = 128
@@ -55,6 +56,12 @@ class params(NamedTuple):
     tsa: str = 'linear_schedule'           # log, linear, exp
     uda_softmax_temp: float = -1        # 0 ~ 1
     uda_confidence_thresh: float = -1   # 0 ~ 1
+
+    #mixmatch
+    alpha: float = 0.75
+    lambda_u: int = 75
+    T: float = 0.5
+    ema_decay: float = 0.999
 
     # data
     data_parallel: bool = True
