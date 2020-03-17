@@ -369,7 +369,7 @@ for i, batch in enumerate(iter_bar):
   iter_bar.set_description('final=%5.3f unsup=%5.3f sup=%5.3f'\
           % (loss.item(), Lu.item(), Lx.item()))
   
-  if global_step % cfg.check_steps == 0 and global_step > 249:
+  if global_step % cfg.check_steps == 0 and global_step > 2999:
     results = eval(get_acc, None, ema_model)
     total_accuracy = torch.cat(results).mean().item()
     if max_acc[0] < total_accuracy:
