@@ -134,7 +134,7 @@ class Trainer(object):
             if global_step % self.cfg.save_steps == 0:
                 self.save(global_step)
 
-            if get_acc and global_step % self.cfg.check_steps == 0 and global_step > 4999:
+            if get_acc and global_step % self.cfg.check_steps == 0 and global_step > 249:
                 if self.cfg.mixmatch_mode:
                     results = self.eval(get_acc, None, ema_model)
                 else:
