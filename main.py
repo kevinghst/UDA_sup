@@ -109,6 +109,8 @@ def main(cfg, model_cfg):
 
     ema_optimizer = None
     ema_model = None
+    model = models.Classifier(model_cfg, len(data.TaskDataset.labels))
+
 
     if cfg.uda_mode:
         unsup_criterion = nn.KLDivLoss(reduction='none')
@@ -126,9 +128,6 @@ def main(cfg, model_cfg):
         sup_criterion = nn.CrossEntropyLoss(reduction='none')
         optimizer = optim.optim4GPU(cfg, model)
     
-    # Load Model
-    model = models.Classifier(model_cfg, len(data.TaskDataset.labels))
-
     # Create trainer
     trainer = train.Trainer(cfg, model, data_iter, optimizer, get_device(), ema_model, ema_optimizer)
 
