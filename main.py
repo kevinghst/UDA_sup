@@ -225,7 +225,7 @@ def main(cfg, model_cfg):
         loss = Lx + w * Lu
         return loss, Lx, Lu
 
-    def get_loss(model, sup_batch, unsup_batch, global_step, ema_model):
+    def get_loss(model, sup_batch, unsup_batch, global_step):
 
         # logits -> prob(softmax) -> log_prob(log_softmax)
 
