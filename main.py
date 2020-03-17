@@ -25,14 +25,21 @@ from utils.utils import set_seeds, get_device, _get_device, torch_device_one
 from utils import optim, configuration
 import numpy as np
 
+def linear_rampup(current, rampup_length):
+    if rampup_length == 0:
+        return 1.0
+    else:
+        current = np.clip(current / rampup_length, 0.0, 1.0)
+        return float(current)
+
 class SemiLoss(object):
-    def __call__(self, outputs_x, targets_x, outputs_u, targets_u, current_step):
+    def __call__(self, outputs_x, targets_x, outputs_u, targets_u, current_step, lambda_u, total_steps):
         probs_u = torch.softmax(outputs_u, dim=1)
 
         Lx = -torch.mean(torch.sum(F.log_softmax(outputs_x, dim=1) * targets_x, dim=1))
         Lu = torch.mean((probs_u - targets_u)**2)
 
-        return Lx, Lu, cfg.lambda_u * linear_rampup(current_step)
+        return Lx, Lu, lambda_u * linear_rampup(current_step, total_steps)
 
 class WeightEMA(object):
     def __init__(self, cfg, model, ema_model, alpha=0.999):
@@ -220,7 +227,7 @@ def main(cfg, model_cfg):
         targets_u = torch.cat(targets[1:], dim=0)
 
         #Lx, Lu, w = train_criterion(logits_x, targets_x, logits_u, targets_u, epoch+batch_idx/cfg.val_iteration)
-        Lx, Lu, w = train_criterion(logits_x, targets_x, logits_u, targets_u, global_step)
+        Lx, Lu, w = train_criterion(logits_x, targets_x, logits_u, targets_u, global_step, cfg.lambda_u, cfg.total_steps)
 
         loss = Lx + w * Lu
         return loss, Lx, Lu
