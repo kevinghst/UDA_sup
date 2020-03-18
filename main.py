@@ -154,9 +154,6 @@ def main(cfg, model_cfg):
         batch_size = input_ids.shape[0]
         sup_size = label_ids.shape[0]
 
-        # Transform label to one-hot
-        label_ids = torch.zeros(batch_size, 2).scatter_(1, label_ids.cpu().view(-1,1), 1).cuda()
-
         with torch.no_grad():
             # compute guessed labels of unlabel samples
             outputs_u = model(input_ids=ori_input_ids, segment_ids=ori_segment_ids, input_mask=ori_input_mask)
