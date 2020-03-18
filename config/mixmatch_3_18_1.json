@@ -17,7 +17,12 @@
   "tsa": "linear_schedule",
   "uda_softmax_temp": 0.85,
   "uda_confidence_thresh": 0.45,
-  "unsup_criterion": "KL",
+  "unsup_criterion": "MSE",
+
+  "alpha": 0.75,
+  "lambda_u": 75,
+  "T": 0.85,
+  "ema_decay": 0.999,
 
   "data_parallel": true,
   "need_prepro": false,
