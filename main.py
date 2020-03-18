@@ -190,8 +190,6 @@ def main(cfg, model_cfg):
         return final_loss, sup_loss, unsup_loss
         
 
-        
-
 
     def get_mixmatch_loss(model, sup_batch, unsup_batch, global_step):
         input_ids, segment_ids, input_mask, label_ids = sup_batch
