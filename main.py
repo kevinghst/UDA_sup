@@ -121,7 +121,10 @@ def main(cfg, model_cfg):
 
 
     if cfg.uda_mode:
-        unsup_criterion = nn.KLDivLoss(reduction='none')
+        if cfg.unsup_criterion == 'KL':
+            unsup_criterion = nn.KLDivLoss(reduction='none')
+        else:
+            unsup_criterion = nn.MSELoss(reduction='none')
         sup_criterion = nn.CrossEntropyLoss(reduction='none')
         optimizer = optim.optim4GPU(cfg, model)
     elif cfg.mixmatch_mode:

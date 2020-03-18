@@ -1,8 +1,7 @@
 {
   "ExpandedNodes": [
-    "",
-    "\\config"
+    ""
   ],
-  "SelectedNode": "\\config\\mixmatch.json",
+  "SelectedNode": "\\main.py",
   "PreviewInSolutionExplorer": false
 }
