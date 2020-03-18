@@ -146,7 +146,6 @@ def main(cfg, model_cfg):
 
     # Training
     def get_mixmatch_loss_two(model, sup_batch, unsup_batch, global_step):
-        pdb.set_trace()
         input_ids, segment_ids, input_mask, label_ids = sup_batch
         if unsup_batch:
             ori_input_ids, ori_segment_ids, ori_input_mask, \
