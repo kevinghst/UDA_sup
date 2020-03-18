@@ -373,11 +373,10 @@ def main(cfg, model_cfg):
     if cfg.mode == 'train_eval':
         if cfg.mixmatch_mode:
             trainer.train(get_mixmatch_loss, get_acc, cfg.model_file, cfg.pretrain_file)
+        elif cfg.uda_test_mode:
+            trainer.train(get_mixmatch_loss_two, get_acc, cfg.model_file, cfg.pretrain_file)
         elif cfg.uda_mode:
             trainer.train(get_loss, get_acc, cfg.model_file, cfg.pretrain_file)
-        else:
-            cfg.uda_mode = True
-            trainer.train(get_mixmatch_loss_two, get_acc, cfg.model_file, cfg.pretrain_file)
 
     if cfg.mode == 'eval':
         results = trainer.eval(get_acc, cfg.model_file, None)

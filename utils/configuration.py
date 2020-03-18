@@ -44,6 +44,7 @@ class params(NamedTuple):
     mode: str = None                    # train, eval, test
     uda_mode: bool = False              # True, False
     mixmatch_mode: bool = False
+    uda_test_mode: bool = False
     
     total_steps: int = 100000           # total_steps >= n_epcohs * n_examples / 3
     max_seq_length: int = 128

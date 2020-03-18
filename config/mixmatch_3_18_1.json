@@ -4,8 +4,9 @@
   "warmup": 0.1,
   "do_lower_case": true,
   "mode": "train_eval",
-  "uda_mode": false,
+  "uda_mode": true,
   "mixmatch_mode": false,
+  "uda_test_mode":  true,
 
   "total_steps": 10000,
   "max_seq_length": 128,
