@@ -13,11 +13,11 @@
   "eval_batch_size": 16,
 
   "unsup_ratio": 1,
-  "uda_coeff": 1,
+  "uda_coeff": 0.25,
   "tsa": "linear_schedule",
   "uda_softmax_temp": 0.85,
   "uda_confidence_thresh": 0.45,
-  "unsup_criterion": "KL",
+  "unsup_criterion": "MSE",
 
   "data_parallel": true,
   "need_prepro": false,
