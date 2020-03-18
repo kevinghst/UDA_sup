@@ -4,7 +4,7 @@
   "warmup": 0.1,
   "do_lower_case": true,
   "mode": "train_eval",
-  "uda_mode": true,
+  "uda_mode": false,
   "mixmatch_mode": false,
 
   "total_steps": 10000,

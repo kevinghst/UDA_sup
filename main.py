@@ -286,7 +286,7 @@ def main(cfg, model_cfg):
         return loss, Lx, Lu
 
     def get_loss(model, sup_batch, unsup_batch, global_step):
-
+        pdb.set_trace()
         # logits -> prob(softmax) -> log_prob(log_softmax)
 
         # batch
@@ -375,7 +375,9 @@ def main(cfg, model_cfg):
             trainer.train(get_mixmatch_loss, get_acc, cfg.model_file, cfg.pretrain_file)
         elif cfg.uda_mode:
             trainer.train(get_loss, get_acc, cfg.model_file, cfg.pretrain_file)
-
+        else:
+            cfg.uda_mode = True
+            trainer.train(get_mixmatch_loss_two, get_acc, cfg.model_file, cfg.pretrain_file)
 
     if cfg.mode == 'eval':
         results = trainer.eval(get_acc, cfg.model_file, None)
