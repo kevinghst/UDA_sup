@@ -166,10 +166,10 @@ def main(cfg, model_cfg):
             targets_u = pt / pt.sum(dim=1, keepdim=True)
             targets_u = targets_u.detach()
 
-        input_ids = [input_ids, ori_input_ids, aug_input_ids]
-        seg_ids = [segment_ids, ori_segment_ids, aug_segment_ids]
-        input_mask = [input_mask, ori_input_mask, aug_input_mask]
-        targets = [label_ids, targets_u, targets_u]
+        input_ids = torch.cat((input_ids, ori_input_ids, aug_input_ids), dim=0)
+        seg_ids = torch.cat((segment_ids, ori_segment_ids, aug_segment_ids), dim=0)
+        input_mask = torch.cat((input_mask, ori_input_mask, aug_input_mask), dim=0)
+        targets_u = torch.cat((targets_u, targets_u), dim=0)
 
         logits = model(input_ids, seg_ids, input_mask)
 
