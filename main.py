@@ -171,7 +171,7 @@ def main(cfg, model_cfg):
         input_mask = [input_mask, ori_input_mask, aug_input_mask]
         targets = [label_ids, targets_u, targets_u]
 
-        logits = model(input_ids=input_ids, segment_ids=seg_ids, input_mask=input_mask)
+        logits = model(input_ids, seg_ids, input_mask)
 
         logits_x = logits[:sup_size]
         logits_u = logits[sup_size:]
