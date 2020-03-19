@@ -162,11 +162,19 @@ def main(cfg, model_cfg):
             pt = p**(1/cfg.uda_softmax_temp)
             targets_u = pt / pt.sum(dim=1, keepdim=True)
             targets_u = targets_u.detach()
+            targets_u = torch.cat((targets_u, targets_u), dim=0)
+
+            # confidence-based masking
+            if cfg.uda_confidence_thresh != -1:
+                unsup_loss_mask = torch.max(targets_u, dim=-1)[0] > cfg.uda_confidence_thresh
+                unsup_loss_mask = unsup_loss_mask.type(torch.float32)
+            else:
+                unsup_loss_mask = torch.ones(len(logits) - sup_size, dtype=torch.float32)
+            unsup_loss_mask = unsup_loss_mask.to(_get_device())
 
         input_ids = torch.cat((input_ids, ori_input_ids, aug_input_ids), dim=0)
         seg_ids = torch.cat((segment_ids, ori_segment_ids, aug_segment_ids), dim=0)
         input_mask = torch.cat((input_mask, ori_input_mask, aug_input_mask), dim=0)
-        targets_u = torch.cat((targets_u, targets_u), dim=0)
 
         logits = model(input_ids, seg_ids, input_mask)
 
@@ -183,10 +191,9 @@ def main(cfg, model_cfg):
         else:
             sup_loss = torch.mean(sup_loss)
 
-        probs_u = torch.softmax(logits_u, dim=1)
-        unsup_loss = torch.sum(unsup_criterion(probs_u, targets_u), dim=-1)
-
-        #unsup_loss = torch.mean((probs_u - targets_u)**2)
+        log_probs_u = F.log_softmax(logits_u, dim=1)
+        unsup_loss = torch.sum(unsup_criterion(log_probs_u, targets_u), dim=-1)
+        unsup_loss = torch.sum(unsup_loss * unsup_loss_mask, dim=-1) / torch.max(torch.sum(unsup_loss_mask, dim=-1), torch_device_one())
 
         final_loss = sup_loss + cfg.uda_coeff*unsup_loss
         return final_loss, sup_loss, unsup_loss
