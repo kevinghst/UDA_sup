@@ -338,7 +338,8 @@ def main(cfg, model_cfg):
                 ori_logits = model(ori_input_ids, ori_segment_ids, ori_input_mask)
                 ori_prob   = F.softmax(ori_logits, dim=-1)    # KLdiv target
                 # temp control
-                ori_prob = ori_prob**(1/cfg.uda_softmax_temp)
+                #ori_prob = ori_prob**(1/cfg.uda_softmax_temp)
+
                 # ori_log_prob = F.log_softmax(ori_logits, dim=-1)
 
                 # confidence-based masking
@@ -350,7 +351,8 @@ def main(cfg, model_cfg):
                 unsup_loss_mask = unsup_loss_mask.to(_get_device())
                     
             # aug
-            aug_log_prob = F.log_softmax(logits[sup_size:], dim=-1)
+            uda_softmax_temp = cfg.uda_softmax_temp if cfg.uda_softmax_temp > 0 else 1.
+            aug_log_prob = F.log_softmax(logits[sup_size:] / uda_softmax_temp, dim=-1)
 
             # KLdiv loss
             """
