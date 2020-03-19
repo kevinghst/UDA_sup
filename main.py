@@ -339,8 +339,7 @@ def main(cfg, model_cfg):
                     
             # aug
             # softmax temperature controlling
-            uda_softmax_temp = cfg.uda_softmax_temp if cfg.uda_softmax_temp > 0 else 1.
-            aug_log_prob = F.log_softmax(logits[sup_size:] / uda_softmax_temp, dim=-1)
+            aug_log_prob = F.log_softmax(logits[sup_size:], dim=-1)
 
             # KLdiv loss
             """
