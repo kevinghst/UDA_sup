@@ -159,7 +159,7 @@ def main(cfg, model_cfg):
             outputs_u = model(input_ids=ori_input_ids, segment_ids=ori_segment_ids, input_mask=ori_input_mask)
             outputs_u2 = model(input_ids=aug_input_ids, segment_ids=aug_segment_ids, input_mask=aug_input_mask)
             p = (torch.softmax(outputs_u, dim=1) + torch.softmax(outputs_u2, dim=1)) / 2
-            pt = p**(1/cfg.T)
+            pt = p**(1/cfg.uda_softmax_temp)
             targets_u = pt / pt.sum(dim=1, keepdim=True)
             targets_u = targets_u.detach()
 
@@ -184,7 +184,9 @@ def main(cfg, model_cfg):
             sup_loss = torch.mean(sup_loss)
 
         probs_u = torch.softmax(logits_u, dim=1)
-        unsup_loss = torch.mean((probs_u - targets_u)**2)
+        unsup_loss = torch.sum(unsup_criterion(probs_u, targets_u), dim=-1)
+
+        #unsup_loss = torch.mean((probs_u - targets_u)**2)
 
         final_loss = sup_loss + cfg.uda_coeff*unsup_loss
         return final_loss, sup_loss, unsup_loss

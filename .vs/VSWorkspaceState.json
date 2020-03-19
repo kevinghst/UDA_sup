@@ -1,6 +1,8 @@
 {
   "ExpandedNodes": [
-    ""
+    "",
+    "\\config",
+    "\\utils"
   ],
   "SelectedNode": "\\main.py",
   "PreviewInSolutionExplorer": false
