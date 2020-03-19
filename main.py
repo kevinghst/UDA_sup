@@ -306,17 +306,13 @@ def main(cfg, model_cfg):
             input_mask = torch.cat((input_mask, aug_input_mask), dim=0)
             
         # logits
-        #hidden = model(
-        #    input_ids=input_ids, 
-        #    segment_ids=segment_ids, 
-        #    input_mask=input_mask,
-        #    output_h=True
-        #)
-        #logits = model(input_h=hidden)
-
-        logits = model(input_ids, segment_ids, input_mask)
-
-
+        hidden = model(
+            input_ids=input_ids, 
+            segment_ids=segment_ids, 
+            input_mask=input_mask,
+            output_h=True
+        )
+        logits = model(input_h=hidden)
 
 
         # sup loss
@@ -338,7 +334,7 @@ def main(cfg, model_cfg):
                 ori_logits = model(ori_input_ids, ori_segment_ids, ori_input_mask)
                 ori_prob   = F.softmax(ori_logits, dim=-1)    # KLdiv target
                 # temp control
-                ori_prob = ori_prob**(1/cfg.uda_softmax_temp)
+                #ori_prob = ori_prob**(1/cfg.uda_softmax_temp)
 
                 # confidence-based masking
                 if cfg.uda_confidence_thresh != -1:
@@ -349,8 +345,7 @@ def main(cfg, model_cfg):
                 unsup_loss_mask = unsup_loss_mask.to(_get_device())
                     
             # aug
-            #uda_softmax_temp = cfg.uda_softmax_temp if cfg.uda_softmax_temp > 0 else 1.
-            uda_softmax_temp = 1
+            uda_softmax_temp = cfg.uda_softmax_temp if cfg.uda_softmax_temp > 0 else 1.
             aug_log_prob = F.log_softmax(logits[sup_size:] / uda_softmax_temp, dim=-1)
 
             # KLdiv loss
