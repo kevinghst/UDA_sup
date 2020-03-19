@@ -326,6 +326,7 @@ def main(cfg, model_cfg):
             with torch.no_grad():
                 ori_logits = model(ori_input_ids, ori_segment_ids, ori_input_mask)
                 ori_prob   = F.softmax(ori_logits, dim=-1)    # KLdiv target
+                ori_prob = ori_prob**(1/cfg.uda_softmax_temp)
                 # ori_log_prob = F.log_softmax(ori_logits, dim=-1)
 
                 # confidence-based masking
@@ -339,6 +340,9 @@ def main(cfg, model_cfg):
             # aug
             # softmax temperature controlling
             uda_softmax_temp = cfg.uda_softmax_temp if cfg.uda_softmax_temp > 0 else 1.
+            # kevin
+            uda_soft_max_temp = 1
+            # kevin
             aug_log_prob = F.log_softmax(logits[sup_size:] / uda_softmax_temp, dim=-1)
 
             # KLdiv loss
