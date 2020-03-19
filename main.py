@@ -306,13 +306,17 @@ def main(cfg, model_cfg):
             input_mask = torch.cat((input_mask, aug_input_mask), dim=0)
             
         # logits
-        hidden = model(
-            input_ids=input_ids, 
-            segment_ids=segment_ids, 
-            input_mask=input_mask,
-            output_h=True
-        )
-        logits = model(input_h=hidden)
+        #hidden = model(
+        #    input_ids=input_ids, 
+        #    segment_ids=segment_ids, 
+        #    input_mask=input_mask,
+        #    output_h=True
+        #)
+        #logits = model(input_h=hidden)
+
+        logits = model(input_ids, segment_ids, input_mask)
+
+
 
 
         # sup loss
