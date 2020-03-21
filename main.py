@@ -314,7 +314,6 @@ def main(cfg, model_cfg):
         )
         logits = model(input_h=hidden)
 
-
         # sup loss
         sup_size = label_ids.shape[0]            
         sup_loss = sup_criterion(logits[:sup_size], label_ids)  # shape : train_batch_size
