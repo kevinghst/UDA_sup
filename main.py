@@ -352,10 +352,10 @@ def main(model_cfg):
         # batch
         input_ids, segment_ids, input_mask, og_label_ids = sup_batch
 
+        sup_size = input_ids.size(0)
+
         # convert label_ids to hot vector
         label_ids = torch.zeros(sup_size, 2).scatter_(1, og_label_ids.cpu().view(-1,1), 1).cuda()
-
-        sup_size = label_ids.size(0)
 
         if unsup_batch:
             ori_input_ids, ori_segment_ids, ori_input_mask, \
