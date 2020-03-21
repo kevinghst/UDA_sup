@@ -33,14 +33,18 @@ parser.add_argument('--lr', default=1e-5, type=float)
 parser.add_argument('--warmup', default=0.1, type=float)
 parser.add_argument('--do_lower_case', default=True, type=bool)
 parser.add_argument('--mode', default='train_eval', type=str)
-parser.add_argument('--uda_mode', default=True, type=bool)
-parser.add_argument('--mixmatch_mode', default=False, type=bool)
-parser.add_argument('--uda_test_mode', default=False, type=bool)
+
+parser.add_argument('--uda_mode', action='store_true')
+parser.add_argument('--mixmatch_mode', action='store_true')
+parser.add_argument('--uda_test_mode', action='store_true')
 
 parser.add_argument('--total_steps', default=10000, type=int)
 parser.add_argument('--max_seq_length', default=128, type=int)
 parser.add_argument('--train_batch_size', default=4, type=int)
 parser.add_argument('--eval_batch_size', default=16, type=int)
+
+parser.add_argument('--no_sup_loss', action='store_true')
+parser.add_argument('--no_unsup_loss', action='store_true')
 
 #UDA
 parser.add_argument('--unsup_ratio', default=1, type=int)
@@ -338,11 +342,14 @@ def main(model_cfg):
         #Lx, Lu, w = train_criterion(logits_x, targets_x, logits_u, targets_u, epoch+batch_idx/cfg.val_iteration)
         Lx, Lu, w = train_criterion(logits_x, targets_x, logits_u, targets_u, global_step, cfg.lambda_u, cfg.total_steps)
 
-        loss = Lx + w * Lu
-        #loss = w * Lu
-        #loss = Lx
+        if cfg.no_sup_loss:
+            final_loss = w * Lu
+        elif cfg.no_unsup_loss:
+            final_loss = Lx
+        else:
+            final_loss = Lx + w * Lu
 
-        return loss, Lx, Lu
+        return final_loss, Lx, Lu
 
     def get_loss(model, sup_batch, unsup_batch, global_step):
         # logits -> prob(softmax) -> log_prob(log_softmax)
@@ -413,10 +420,13 @@ def main(model_cfg):
             """
             unsup_loss = torch.sum(unsup_criterion(aug_log_prob, ori_prob), dim=-1)
             unsup_loss = torch.sum(unsup_loss * unsup_loss_mask, dim=-1) / torch.max(torch.sum(unsup_loss_mask, dim=-1), torch_device_one())
-            
-            #final_loss = sup_loss + cfg.uda_coeff*unsup_loss
-            final_loss = sup_loss
-            #final_loss = cfg.uda_coeff*unsup_loss
+
+            if cfg.no_sup_loss:
+                final_loss = cfg.uda_coeff*unsup_loss
+            elif cfg.no_unsup_loss:
+                final_loss = sup_loss
+            else:
+                final_loss = sup_loss + cfg.uda_coeff*unsup_loss
 
             return final_loss, sup_loss, unsup_loss
         return sup_loss, None, None
