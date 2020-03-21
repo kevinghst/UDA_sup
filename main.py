@@ -355,6 +355,8 @@ def main(model_cfg):
         # convert label_ids to hot vector
         label_ids = torch.zeros(sup_size, 2).scatter_(1, og_label_ids.cpu().view(-1,1), 1).cuda()
 
+        sup_size = label_ids.size(0)
+
         if unsup_batch:
             ori_input_ids, ori_segment_ids, ori_input_mask, \
             aug_input_ids, aug_segment_ids, aug_input_mask  = unsup_batch
@@ -376,7 +378,7 @@ def main(model_cfg):
 
         l = np.random.beta(cfg.alpha, cfg.alpha)
         l = max(l, 1-l)
-        idx = torch.randperm(sup_hidden.size(0))
+        idx = torch.randperm(sup_size)
         sup_h_a, sup_h_b = sup_hidden, sup_hidden[idx]
         sup_label_a, sup_label_b = label_ids, label_ids[idx]
 
