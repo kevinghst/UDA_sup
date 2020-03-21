@@ -13,6 +13,7 @@
 # limitations under the License.
 import pdb
 import fire
+import argparse
 
 import torch
 import torch.nn as nn
@@ -24,6 +25,57 @@ from load_data import load_data
 from utils.utils import set_seeds, get_device, _get_device, torch_device_one
 from utils import optim, configuration
 import numpy as np
+
+parser = argparse.ArgumentParser(description='PyTorch UDA Training')
+
+parser.add_argument('--seed', default=42, type=int)
+parser.add_argument('--lr', default=1e-5, type=float)
+parser.add_argument('--warmup', default=0.1, type=float)
+parser.add_argument('--do_lower_case', default=True, type=bool)
+parser.add_argument('--mode', default='train_eval', type=str)
+parser.add_argument('--uda_mode', default=True, type=bool)
+parser.add_argument('--mixmatch_mode', default=False, type=bool)
+
+parser.add_argument('--total_steps', default=10000, type=int)
+parser.add_argument('--max_seq_length', default=128, type=int)
+parser.add_argument('--train_batch_size', default=4, type=int)
+parser.add_argument('--eval_batch_size', default=16, type=int)
+
+#UDA
+parser.add_argument('--unsup_ratio', default=1, type=int)
+parser.add_argument('--uda_coeff', default=1, type=int)
+parser.add_argument('--tsa', default='linear_schedule', type=str)
+parser.add_argument('--uda_softmax_temp', default=0.85, type=float)
+parser.add_argument('--uda_confidence_thresh', default=0.45, type=float)
+parser.add_argument('--unsup_criterion', default='KL', type=str)
+
+#MixMatch
+parser.add_argument('--alpha', default=0.75, type=float)
+parser.add_argument('--lambda_u', default=75, type=int)
+parser.add_argument('--T', default=0.5, type=float)
+parser.add_argument('--ema_decay', default=0.999, type=float)
+
+parser.add_argument('--data_parallel', default=True, type=bool)
+parser.add_argument('--need_prepro', default=False, type=bool)
+parser.add_argument('--sup_data_dir', default='data/imdb_sup_train.txt', type=str)
+parser.add_argument('--unsup_data_dir', default="data/imdb_unsup_train.txt", type=str)
+parser.add_argument('--eval_data_dir', default="data/imdb_sup_test.txt", type=str)
+
+parser.add_argument('--model_file', default="", type=str)
+parser.add_argument('--pretrain_file', default="BERT_Base_Uncased/bert_model.ckpt", type=str)
+parser.add_argument('--vocab', default="BERT_Base_Uncased/vocab.txt", type=str)
+parser.add_argument('--task', default="imdb", type=str)
+
+parser.add_argument('--save_steps', default=100, type=int)
+parser.add_argument('--check_steps', default=250, type=int)
+parser.add_argument('--results_dir', default="results", type=str)
+
+parser.add_argument('--is_position', default=False, type=bool)
+
+args = parser.parse_args()
+state = {k: v for k, v in args._get_kwargs()}
+
+pdb.set_trace()
 
 def linear_rampup(current, rampup_length):
     if rampup_length == 0:
@@ -100,11 +152,10 @@ def interleave(xy, batch):
     return [torch.cat(v, dim=0) for v in xy]
 
 
-def main(cfg, model_cfg):
+def main(model_cfg):
     # Load Configuration
-    cfg = configuration.params.from_json(cfg)                   # Train or Eval cfg
     model_cfg = configuration.model.from_json(model_cfg)        # BERT_cfg
-    set_seeds(cfg.seed)
+    set_seeds(state['seed'])
 
     # Load Data & Create Criterion
     data = load_data(cfg)
