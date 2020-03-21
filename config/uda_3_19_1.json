@@ -14,7 +14,7 @@
 
   "unsup_ratio": 1,
   "uda_coeff": 1,
-  "tsa": "linear_schedule",
+  "tsa": null,
   "uda_softmax_temp": 0.85,
   "uda_confidence_thresh": 0.45,
   "unsup_criterion": "KL",
