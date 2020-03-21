@@ -366,8 +366,8 @@ def main(cfg, model_cfg):
             unsup_loss = torch.sum(unsup_loss * unsup_loss_mask, dim=-1) / torch.max(torch.sum(unsup_loss_mask, dim=-1), torch_device_one())
             
             #final_loss = sup_loss + cfg.uda_coeff*unsup_loss
-            final_loss = sup_loss
-            #final_loss = cfg.uda_coeff*unsup_loss
+            #final_loss = sup_loss
+            final_loss = cfg.uda_coeff*unsup_loss
 
             return final_loss, sup_loss, unsup_loss
         return sup_loss, None, None
