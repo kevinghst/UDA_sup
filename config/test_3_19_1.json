@@ -8,7 +8,7 @@
   "mixmatch_mode": false,
   "uda_test_mode":  true,
 
-  "total_steps": 10000,
+  "total_steps": 2000,
   "max_seq_length": 128,
   "train_batch_size": 4,
   "eval_batch_size": 16,
