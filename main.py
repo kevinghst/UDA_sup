@@ -289,7 +289,10 @@ def main(cfg, model_cfg):
         #Lx, Lu, w = train_criterion(logits_x, targets_x, logits_u, targets_u, epoch+batch_idx/cfg.val_iteration)
         Lx, Lu, w = train_criterion(logits_x, targets_x, logits_u, targets_u, global_step, cfg.lambda_u, cfg.total_steps)
 
-        loss = Lx + w * Lu
+        #loss = Lx + w * Lu
+        #loss = Lx + w * Lu
+        loss = Lx
+
         return loss, Lx, Lu
 
     def get_loss(model, sup_batch, unsup_batch, global_step):
