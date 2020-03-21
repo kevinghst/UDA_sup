@@ -342,12 +342,7 @@ def main(model_cfg):
         #Lx, Lu, w = train_criterion(logits_x, targets_x, logits_u, targets_u, epoch+batch_idx/cfg.val_iteration)
         Lx, Lu, w = train_criterion(logits_x, targets_x, logits_u, targets_u, global_step, cfg.lambda_u, cfg.total_steps)
 
-        if cfg.no_sup_loss:
-            final_loss = w * Lu
-        elif cfg.no_unsup_loss:
-            final_loss = Lx
-        else:
-            final_loss = Lx + w * Lu
+        final_loss = Lx + w * Lu
 
         return final_loss, Lx, Lu
 
@@ -517,12 +512,7 @@ def main(model_cfg):
             unsup_loss = torch.sum(unsup_criterion(aug_log_prob, ori_prob), dim=-1)
             unsup_loss = torch.sum(unsup_loss * unsup_loss_mask, dim=-1) / torch.max(torch.sum(unsup_loss_mask, dim=-1), torch_device_one())
 
-            if cfg.no_sup_loss:
-                final_loss = cfg.uda_coeff*unsup_loss
-            elif cfg.no_unsup_loss:
-                final_loss = sup_loss
-            else:
-                final_loss = sup_loss + cfg.uda_coeff*unsup_loss
+            final_loss = sup_loss + cfg.uda_coeff*unsup_loss
 
             return final_loss, sup_loss, unsup_loss
         return sup_loss, None, None

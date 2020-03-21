@@ -104,6 +104,12 @@ class Trainer(object):
             # update
             self.optimizer.zero_grad()
             final_loss, sup_loss, unsup_loss = get_loss(model, sup_batch, unsup_batch, global_step)
+
+            if cfg.no_sup_loss:
+                final_loss = unsup_loss
+            elif cfg.no_unsup_loss:
+                final_loss = sup_loss
+
             final_loss.backward()
             self.optimizer.step()
 
