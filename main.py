@@ -35,6 +35,7 @@ parser.add_argument('--do_lower_case', default=True, type=bool)
 parser.add_argument('--mode', default='train_eval', type=str)
 parser.add_argument('--uda_mode', default=True, type=bool)
 parser.add_argument('--mixmatch_mode', default=False, type=bool)
+parser.add_argument('--uda_test_mode', default=False, type=bool)
 
 parser.add_argument('--total_steps', default=10000, type=int)
 parser.add_argument('--max_seq_length', default=128, type=int)
