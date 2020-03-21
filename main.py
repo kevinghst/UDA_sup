@@ -72,10 +72,7 @@ parser.add_argument('--results_dir', default="results", type=str)
 
 parser.add_argument('--is_position', default=False, type=bool)
 
-args = parser.parse_args()
-state = {k: v for k, v in args._get_kwargs()}
-
-pdb.set_trace()
+cfg, unknown = parser.parse_known_args()
 
 def linear_rampup(current, rampup_length):
     if rampup_length == 0:
@@ -155,7 +152,7 @@ def interleave(xy, batch):
 def main(model_cfg):
     # Load Configuration
     model_cfg = configuration.model.from_json(model_cfg)        # BERT_cfg
-    set_seeds(state['seed'])
+    set_seeds(cfg.seed)
 
     # Load Data & Create Criterion
     data = load_data(cfg)
