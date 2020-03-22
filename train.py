@@ -86,8 +86,8 @@ class Trainer(object):
         # uda_mode == False --> sup_iter is not repeated
         iter_bar = tqdm(self.unsup_iter, total=self.cfg.total_steps) if ssl_mode \
               else tqdm(self.sup_iter, total=self.cfg.total_steps)
+
         for i, batch in enumerate(iter_bar):
-                
             # Device assignment
             if ssl_mode:
                 sup_batch = [t.to(self.device) for t in next(self.sup_iter)]
@@ -98,10 +98,7 @@ class Trainer(object):
                 if unsup_batch[0].shape[0] != unsup_batch_size:
                     continue
             else:
-                if self.cfg.repeat_sup:
-                    sup_batch = [t.to(self.device) for t in next(self.sup_iter)]
-                else:
-                    sup_batch = [t.to(self.device) for t in batch]
+                sup_batch = [t.to(self.device) for t in batch]
                 unsup_batch = None
 
             # update
