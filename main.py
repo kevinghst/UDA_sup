@@ -42,7 +42,7 @@ parser.add_argument('--total_steps', default=10000, type=int)
 parser.add_argument('--check_after', default=4999, type=int)
 parser.add_argument('--max_seq_length', default=128, type=int)
 parser.add_argument('--train_batch_size', default=4, type=int)
-parser.add_argument('--eval_batch_size', default=16, type=int)
+parser.add_argument('--eval_batch_size', default=32, type=int)
 
 parser.add_argument('--no_sup_loss', action='store_true')
 parser.add_argument('--no_unsup_loss', action='store_true')
@@ -348,7 +348,6 @@ def main(model_cfg):
         return final_loss, Lx, Lu
 
     def get_uda_mixup_loss(model, sup_batch, unsup_batch, global_step):
-        pdb.set_trace()
         # logits -> prob(softmax) -> log_prob(log_softmax)
 
         # batch
