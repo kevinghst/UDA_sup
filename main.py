@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import pdb
-import fire
 import argparse
 
 import torch
@@ -33,6 +32,7 @@ parser.add_argument('--lr', default=1e-5, type=float)
 parser.add_argument('--warmup', default=0.1, type=float)
 parser.add_argument('--do_lower_case', default=True, type=bool)
 parser.add_argument('--mode', default='train_eval', type=str)
+parser.add_argument('--model_cfg', default='config/bert_base.json', type=str)
 
 parser.add_argument('--uda_mode', action='store_true')
 parser.add_argument('--mixmatch_mode', action='store_true')
@@ -155,9 +155,9 @@ def interleave(xy, batch):
     return [torch.cat(v, dim=0) for v in xy]
 
 
-def main(model_cfg):
+def main():
     # Load Configuration
-    model_cfg = configuration.model.from_json(model_cfg)        # BERT_cfg
+    model_cfg = configuration.model.from_json(cfg.model_cfg)        # BERT_cfg
     set_seeds(cfg.seed)
 
     # Load Data & Create Criterion
@@ -470,7 +470,6 @@ def main(model_cfg):
         # sup loss
         sup_size = label_ids.shape[0]            
         sup_loss = sup_criterion(logits[:sup_size], label_ids)  # shape : train_batch_size
-        pdb.set_trace()
         if cfg.tsa:
             tsa_thresh = get_tsa_thresh(cfg.tsa, global_step, cfg.total_steps, start=1./logits.shape[-1], end=1)
             larger_than_threshold = torch.exp(-sup_loss) > tsa_thresh   # prob = exp(log_prob), prob > tsa_threshold
@@ -552,5 +551,4 @@ def main(model_cfg):
 
 
 if __name__ == '__main__':
-    fire.Fire(main)
-    #main('config/uda.json', 'config/bert_base.json')
+    main()
