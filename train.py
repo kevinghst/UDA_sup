@@ -77,6 +77,7 @@ class Trainer(object):
         global_step = 0
         loss_sum = 0.
         max_acc = [0., 0]   # acc, step
+        no_improvement = 0
 
         sup_batch_size = None
         unsup_batch_size = None
@@ -150,8 +151,17 @@ class Trainer(object):
                 if max_acc[0] < total_accuracy:
                     self.save(global_step)
                     max_acc = total_accuracy, global_step
+                    no_improvement = 0
+                else:
+                    no_improvement += 1
+
                 print('Accuracy : %5.3f' % total_accuracy)
                 print('Max Accuracy : %5.3f Max global_steps : %d Cur global_steps : %d' %(max_acc[0], max_acc[1], global_step), end='\n\n')
+                
+                if no_improvement == self.cfg.early_stopping:
+                    print("Early stopped")
+                    break
+
 
             if self.cfg.total_steps and self.cfg.total_steps < global_step:
                 print('The total steps have been reached')
