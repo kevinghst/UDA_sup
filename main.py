@@ -347,14 +347,11 @@ def main():
         return final_loss, Lx, Lu
 
     def get_uda_mixup_loss(model, sup_batch, unsup_batch, global_step):
-        # logits -> prob(softmax) -> log_prob(log_softmax)
-
         # batch
         input_ids, segment_ids, input_mask, og_label_ids = sup_batch
 
-        sup_size = input_ids.size(0)
-
         # convert label_ids to hot vector
+        sup_size = input_ids.size(0)
         label_ids = torch.zeros(sup_size, 2).scatter_(1, og_label_ids.cpu().view(-1,1), 1).cuda()
 
         if unsup_batch:
@@ -378,14 +375,18 @@ def main():
 
         l = np.random.beta(cfg.alpha, cfg.alpha)
         l = max(l, 1-l)
-        idx = torch.randperm(sup_size)
-        sup_h_a, sup_h_b = sup_hidden, sup_hidden[idx]
-        sup_label_a, sup_label_b = label_ids, label_ids[idx]
 
+        sup_idx = torch.randperm(sup_hidden.size(0))
+        sup_h_a, sup_h_b = sup_hidden, sup_hidden[sup_idx]
+        sup_label_a, sup_label_b = label_ids, label_ids[sup_idx]
         mixed_sup_h = l * sup_h_a + (1 - l) * sup_h_b
         mixed_sup_label = l * sup_label_a + (1 - l) * sup_label_b
 
-        hidden = torch.cat([mixed_sup_h, unsup_hidden], dim=0)
+        unsup_idx = torch.randperm(unsup_hidden.size(0))
+        unsup_h_a, unsup_h_b = unsup_hidden, unsup_hidden[unsup_idx]
+        mixed_unsup_h = l * unsup_h_a + (1 - l) * unsup_h_b
+
+        hidden = torch.cat([mixed_sup_h, mixed_unsup_h], dim=0)
 
         logits = model(input_h=hidden)
 
@@ -412,9 +413,12 @@ def main():
                 ori_prob   = F.softmax(ori_logits, dim=-1)    # KLdiv target
                 # ori_log_prob = F.log_softmax(ori_logits, dim=-1)
 
+                ori_prob_a, ori_prob_b = ori_prob, ori_prob[unsup_idx]
+                mixed_ori_prob = l * ori_prob_a + (1 - l) * ori_prob_b
+
                 # confidence-based masking
                 if cfg.uda_confidence_thresh != -1:
-                    unsup_loss_mask = torch.max(ori_prob, dim=-1)[0] > cfg.uda_confidence_thresh
+                    unsup_loss_mask = torch.max(mixed_ori_prob, dim=-1)[0] > cfg.uda_confidence_thresh
                     unsup_loss_mask = unsup_loss_mask.type(torch.float32)
                 else:
                     unsup_loss_mask = torch.ones(len(logits) - sup_size, dtype=torch.float32)
@@ -437,7 +441,7 @@ def main():
                 The official unsup_loss is divided by total
                 https://github.com/google-research/uda/blob/master/text/uda.py#L175
             """
-            unsup_loss = torch.sum(unsup_criterion(aug_log_prob, ori_prob), dim=-1)
+            unsup_loss = torch.sum(unsup_criterion(aug_log_prob, mixed_ori_prob), dim=-1)
             unsup_loss = torch.sum(unsup_loss * unsup_loss_mask, dim=-1) / torch.max(torch.sum(unsup_loss_mask, dim=-1), torch_device_one())
             final_loss = sup_loss + cfg.uda_coeff*unsup_loss
 
