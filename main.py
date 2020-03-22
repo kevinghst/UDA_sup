@@ -37,6 +37,8 @@ parser.add_argument('--model_cfg', default='config/bert_base.json', type=str)
 parser.add_argument('--uda_mode', action='store_true')
 parser.add_argument('--mixmatch_mode', action='store_true')
 parser.add_argument('--uda_test_mode', action='store_true')
+parser.add_argument('--sup_mixup', action='store_true')
+parser.add_argument('--unsup_mixup', action='store_true')
 
 parser.add_argument('--total_steps', default=10000, type=int)
 parser.add_argument('--check_after', default=4999, type=int)
@@ -374,17 +376,19 @@ def main():
         unsup_hidden = hidden[sup_size:]
 
         l = np.random.beta(cfg.alpha, cfg.alpha)
-        l = max(l, 1-l)
+
+        sup_l = max(l, 1-l) if cfg.sup_mixup else 1
+        unsup_l = max(l, 1-l) if cfg.unsup_mixup else 1
 
         sup_idx = torch.randperm(sup_hidden.size(0))
         sup_h_a, sup_h_b = sup_hidden, sup_hidden[sup_idx]
         sup_label_a, sup_label_b = label_ids, label_ids[sup_idx]
-        mixed_sup_h = l * sup_h_a + (1 - l) * sup_h_b
-        mixed_sup_label = l * sup_label_a + (1 - l) * sup_label_b
+        mixed_sup_h = sup_l * sup_h_a + (1 - sup_l) * sup_h_b
+        mixed_sup_label = sup_l * sup_label_a + (1 - sup_l) * sup_label_b
 
         unsup_idx = torch.randperm(unsup_hidden.size(0))
         unsup_h_a, unsup_h_b = unsup_hidden, unsup_hidden[unsup_idx]
-        mixed_unsup_h = l * unsup_h_a + (1 - l) * unsup_h_b
+        mixed_unsup_h = unsup_l * unsup_h_a + (1 - unsup_l) * unsup_h_b
 
         hidden = torch.cat([mixed_sup_h, mixed_unsup_h], dim=0)
 
@@ -414,7 +418,7 @@ def main():
                 # ori_log_prob = F.log_softmax(ori_logits, dim=-1)
 
                 ori_prob_a, ori_prob_b = ori_prob, ori_prob[unsup_idx]
-                mixed_ori_prob = l * ori_prob_a + (1 - l) * ori_prob_b
+                mixed_ori_prob = unsup_l * ori_prob_a + (1 - unsup_l) * ori_prob_b
 
                 # confidence-based masking
                 if cfg.uda_confidence_thresh != -1:
