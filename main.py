@@ -43,6 +43,7 @@ parser.add_argument('--check_after', default=4999, type=int)
 parser.add_argument('--max_seq_length', default=128, type=int)
 parser.add_argument('--train_batch_size', default=4, type=int)
 parser.add_argument('--eval_batch_size', default=32, type=int)
+parser.add_argument('--repeat_sup', action='store_true')
 
 parser.add_argument('--no_sup_loss', action='store_true')
 parser.add_argument('--no_unsup_loss', action='store_true')

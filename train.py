@@ -98,7 +98,10 @@ class Trainer(object):
                 if unsup_batch[0].shape[0] != unsup_batch_size:
                     continue
             else:
-                sup_batch = [t.to(self.device) for t in batch]
+                if self.cfg.repeat_sup:
+                    sup_batch = [t.to(self.device) for t in next(self.sup_iter)]
+                else:
+                    sup_batch = [t.to(self.device) for t in batch]
                 unsup_batch = None
 
             # update
