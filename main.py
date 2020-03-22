@@ -28,7 +28,7 @@ import numpy as np
 parser = argparse.ArgumentParser(description='PyTorch UDA Training')
 
 parser.add_argument('--seed', default=42, type=int)
-parser.add_argument('--lr', default=1e-5, type=float)
+parser.add_argument('--lr', default=0.000025, type=float)
 parser.add_argument('--warmup', default=0.1, type=float)
 parser.add_argument('--do_lower_case', default=True, type=bool)
 parser.add_argument('--mode', default='train_eval', type=str)
@@ -42,7 +42,7 @@ parser.add_argument('--total_steps', default=10000, type=int)
 parser.add_argument('--check_after', default=4999, type=int)
 parser.add_argument('--early_stopping', default=10, type=int)
 parser.add_argument('--max_seq_length', default=128, type=int)
-parser.add_argument('--train_batch_size', default=4, type=int)
+parser.add_argument('--train_batch_size', default=10, type=int)
 parser.add_argument('--eval_batch_size', default=32, type=int)
 
 parser.add_argument('--no_sup_loss', action='store_true')
