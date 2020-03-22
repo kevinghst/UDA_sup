@@ -541,7 +541,7 @@ def main():
             trainer.train(get_mixmatch_loss, get_acc, cfg.model_file, cfg.pretrain_file)
         elif cfg.uda_test_mode:
             trainer.train(get_uda_mixup_loss, get_acc, cfg.model_file, cfg.pretrain_file)
-        elif cfg.uda_mode:
+        else:
             trainer.train(get_loss, get_acc, cfg.model_file, cfg.pretrain_file)
 
     if cfg.mode == 'eval':
