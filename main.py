@@ -348,6 +348,7 @@ def main(model_cfg):
         return final_loss, Lx, Lu
 
     def get_uda_mixup_loss(model, sup_batch, unsup_batch, global_step):
+        pdb.set_trace()
         # logits -> prob(softmax) -> log_prob(log_softmax)
 
         # batch
