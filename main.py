@@ -24,7 +24,6 @@ from load_data import load_data
 from utils.utils import set_seeds, get_device, _get_device, torch_device_one
 from utils import optim, configuration
 import numpy as np
-from losses import *
 
 parser = argparse.ArgumentParser(description='PyTorch UDA Training')
 
