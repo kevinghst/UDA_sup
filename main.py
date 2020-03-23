@@ -274,10 +274,11 @@ def main():
             targets_u = pt / pt.sum(dim=1, keepdim=True)
             targets_u = targets_u.detach()
 
-        concat_input_ids = [input_ids, ori_input_ids, aug_input_ids]
-        concat_seg_ids = [segment_ids, ori_segment_ids, aug_segment_ids]
-        concat_input_mask = [input_mask, ori_input_mask, aug_input_mask]
-        concat_targets = [label_ids, targets_u, targets_u]
+        concat_input_ids = torch.cat((input_ids, ori_input_ids, aug_input_ids), dim=0)
+        concat_seg_ids = torch.cat((segment_ids, ori_segment_ids, aug_segment_ids), dim=0)
+        concat_input_mask = torch.cat((input_mask, ori_input_mask, aug_input_mask), dim=0)
+        concat_targets = torch.cat((label_ids, targets_u, targets_u), dim=0)
+
 
         hidden = model(
             input_ids=concat_input_ids,
