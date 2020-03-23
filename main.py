@@ -127,7 +127,6 @@ class WeightEMA(object):
 # TSA
 def get_tsa_thresh(schedule, global_step, num_train_steps, start, end):
     training_progress = torch.tensor(float(global_step) / float(num_train_steps))
-    print(schedule)
     if schedule == 'linear_schedule':
         threshold = training_progress
     elif schedule == 'exp_schedule':
