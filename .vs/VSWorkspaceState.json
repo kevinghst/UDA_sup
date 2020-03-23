@@ -1,9 +1,8 @@
 {
   "ExpandedNodes": [
     "",
-    "\\config",
-    "\\utils"
+    "\\config"
   ],
-  "SelectedNode": "\\main.py",
+  "SelectedNode": "\\config\\uda.json",
   "PreviewInSolutionExplorer": false
 }
