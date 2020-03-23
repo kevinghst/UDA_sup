@@ -237,6 +237,7 @@ def main():
         logits_u = logits[sup_size:]
 
         sup_loss = sup_criterion(logits_x, label_ids)
+        pdb.set_trace()
         if cfg.tsa:
             tsa_thresh = get_tsa_thresh(cfg.tsa, global_step, cfg.total_steps, start=1./logits.shape[-1], end=1)
             larger_than_threshold = torch.exp(-sup_loss) > tsa_thresh   # prob = exp(log_prob), prob > tsa_threshold
