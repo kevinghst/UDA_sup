@@ -237,16 +237,13 @@ def main():
         logits_u = logits[sup_size:]
 
         sup_loss = sup_criterion(logits_x, label_ids)
-        print(cfg.tsa)
         if cfg.tsa and cfg.tsa != "none":
-            print("have tsa")
             tsa_thresh = get_tsa_thresh(cfg.tsa, global_step, cfg.total_steps, start=1./logits.shape[-1], end=1)
             larger_than_threshold = torch.exp(-sup_loss) > tsa_thresh   # prob = exp(log_prob), prob > tsa_threshold
             # larger_than_threshold = torch.sum(  F.softmax(pred[:sup_size]) * torch.eye(num_labels)[sup_label_ids]  , dim=-1) > tsa_threshold
             loss_mask = torch.ones_like(label_ids, dtype=torch.float32) * (1 - larger_than_threshold.type(torch.float32))
             sup_loss = torch.sum(sup_loss * loss_mask, dim=-1) / torch.max(torch.sum(loss_mask, dim=-1), torch_device_one())
         else:
-            print("dont have tsa")
             sup_loss = torch.mean(sup_loss)
 
         log_probs_u = F.log_softmax(logits_u, dim=1)
@@ -462,7 +459,7 @@ def main():
         # sup loss
         sup_loss = -torch.sum(F.log_softmax(sup_logits, dim=1) * mixed_sup_label, dim=1)
 
-        if cfg.tsa:
+        if cfg.tsa and cfg.tsa != "none":
             tsa_thresh = get_tsa_thresh(cfg.tsa, global_step, cfg.total_steps, start=1./logits.shape[-1], end=1)
             larger_than_threshold = torch.exp(-sup_loss) > tsa_thresh   # prob = exp(log_prob), prob > tsa_threshold
             # larger_than_threshold = torch.sum(  F.softmax(pred[:sup_size]) * torch.eye(num_labels)[sup_label_ids]  , dim=-1) > tsa_threshold
@@ -539,7 +536,7 @@ def main():
         # sup loss
         sup_size = label_ids.shape[0]            
         sup_loss = sup_criterion(logits[:sup_size], label_ids)  # shape : train_batch_size
-        if cfg.tsa:
+        if cfg.tsa and cfg.tsa != "none":
             tsa_thresh = get_tsa_thresh(cfg.tsa, global_step, cfg.total_steps, start=1./logits.shape[-1], end=1)
             larger_than_threshold = torch.exp(-sup_loss) > tsa_thresh   # prob = exp(log_prob), prob > tsa_threshold
             # larger_than_threshold = torch.sum(  F.softmax(pred[:sup_size]) * torch.eye(num_labels)[sup_label_ids]  , dim=-1) > tsa_threshold
