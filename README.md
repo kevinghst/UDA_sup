@@ -97,4 +97,4 @@ Thanks to references of [UDA](https://github.com/google-research/uda) and [Pytor
 
 
 ## Kevin's Notes
-Run UDA: `python main.py --uda_mode --uda_test_mode --check_after 2999`
+Run UDA: `python main.py --uda_mode --check_after 2999`
