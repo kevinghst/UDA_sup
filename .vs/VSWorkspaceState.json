@@ -1,8 +1,7 @@
 {
   "ExpandedNodes": [
-    "",
-    "\\config"
+    ""
   ],
-  "SelectedNode": "\\config\\uda.json",
+  "SelectedNode": "\\load_data.py",
   "PreviewInSolutionExplorer": false
 }

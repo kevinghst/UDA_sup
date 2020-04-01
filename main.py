@@ -253,6 +253,79 @@ def main():
         final_loss = sup_loss + cfg.uda_coeff*unsup_loss
         return final_loss, sup_loss, unsup_loss
         
+    def get_mixmatch_loss_sep(model, sup_batch, unsup_batch, global_step):
+        input_ids, segment_ids, input_mask, label_ids = sup_batch
+        if unsup_batch:
+            ori_input_ids, ori_segment_ids, ori_input_mask, \
+            aug_input_ids, aug_segment_ids, aug_input_mask  = unsup_batch
+
+        batch_size = input_ids.shape[0]
+        sup_size = input_ids.size(0)
+
+        # Transform label to one-hot
+        label_ids = torch.zeros(batch_size, 2).scatter_(1, label_ids.cpu().view(-1,1), 1).cuda()
+
+        with torch.no_grad():
+            # compute guessed labels of unlabel samples
+            outputs_u = model(input_ids=ori_input_ids, segment_ids=ori_segment_ids, input_mask=ori_input_mask)
+            outputs_u2 = model(input_ids=aug_input_ids, segment_ids=aug_segment_ids, input_mask=aug_input_mask)
+            p = (torch.softmax(outputs_u, dim=1) + torch.softmax(outputs_u2, dim=1)) / 2
+            pt = p**(1/cfg.uda_softmax_temp)
+            targets_u = pt / pt.sum(dim=1, keepdim=True)
+            targets_u = targets_u.detach()
+
+        concat_input_ids = torch.cat((input_ids, ori_input_ids, aug_input_ids), dim=0)
+        concat_seg_ids = torch.cat((segment_ids, ori_segment_ids, aug_segment_ids), dim=0)
+        concat_input_mask = torch.cat((input_mask, ori_input_mask, aug_input_mask), dim=0)
+        
+        unsup_targets = torch.cat((targets_u, targets_u), dim=0)
+
+        hidden = model(
+            input_ids=concat_input_ids,
+            segment_ids=concat_seg_ids,
+            input_mask=concat_input_mask,
+            output_h=True
+        )
+
+        sup_hidden = hidden[:sup_size]
+        unsup_hidden = hidden[sup_size:]
+
+        l = np.random.beta(cfg.alpha, cfg.alpha)
+
+        sup_l = max(l, 1-l) if cfg.sup_mixup else 1
+        unsup_l = max(l, 1-l) if cfg.unsup_mixup else 1
+
+        sup_idx = torch.randperm(sup_hidden.size(0))
+        sup_h_a, sup_h_b = sup_hidden, sup_hidden[sup_idx]
+        sup_label_a, sup_label_b = label_ids, label_ids[sup_idx]
+        mixed_sup_h = sup_l * sup_h_a + (1 - sup_l) * sup_h_b
+        mixed_sup_label = sup_l * sup_label_a + (1 - sup_l) * sup_label_b
+
+        unsup_idx = torch.randperm(unsup_hidden.size(0))
+        unsup_h_a, unsup_h_b = unsup_hidden, unsup_hidden[unsup_idx]
+        unsup_label_a, unsup_label_b = unsup_targets, unsup_targets[unsup_idx]
+        mixed_unsup_h = unsup_l * unsup_h_a + (1 - unsup_l) * unsup_h_b
+        mixed_unsup_label = unsup_l * unsup_label_a + (1 - unsup_l) * unsup_label_b
+
+
+        hidden = torch.cat([mixed_sup_h, mixed_unsup_h], dim=0)
+
+        logits = model(input_h=hidden)
+
+        sup_logits = logits[:sup_size]
+        unsup_logits = logits[sup_size:]
+
+        #Lx, Lu, w = train_criterion(logits_x, targets_x, logits_u, targets_u, epoch+batch_idx/cfg.val_iteration)
+        Lx, Lu, w = train_criterion(
+            sup_logits, mixed_sup_label, 
+            unsup_logits, mixed_unsup_label, 
+            global_step, cfg.lambda_u, cfg.total_steps
+        )
+
+        final_loss = Lx + w * Lu
+
+        return final_loss, Lx, Lu
+
     def get_mixmatch_loss_short(model, sup_batch, unsup_batch, global_step):
         input_ids, segment_ids, input_mask, label_ids = sup_batch
         if unsup_batch:

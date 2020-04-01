@@ -236,6 +236,7 @@ class load_data:
 
     def sup_data_iter(self):
         sup_dataset = self.TaskDataset(self.sup_data_dir, self.cfg.need_prepro, self.pipeline, self.cfg.max_seq_length, self.cfg.mode, 'sup')
+        pdb.set_trace()
         # len(sup_dataset) = 20
         sup_data_iter = DataLoader(sup_dataset, batch_size=self.sup_batch_size, shuffle=self.shuffle)
         # batch_size = 8
