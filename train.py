@@ -89,6 +89,7 @@ class Trainer(object):
               else tqdm(self.sup_iter, total=self.cfg.total_steps)
 
         for i, batch in enumerate(iter_bar):
+            pdb.set_trace()
             # Device assignment
             if ssl_mode:
                 sup_batch = [t.to(self.device) for t in next(self.sup_iter)]
