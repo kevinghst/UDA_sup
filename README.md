@@ -94,3 +94,7 @@ Thanks to references of [UDA](https://github.com/google-research/uda) and [Pytor
 1. It is known that further training(more pre-training by the specific corpus on already pre-trained BERT) can improve performance. But, this repository does not have pretrain code. So, pretrain code will be added. If you want to further training you can use [Pytorchic BERT](https://github.com/dhlee347/pytorchic-bert) 's pretrain.py or any BERT project.
 
 2. Korean dataset version
+
+
+## Kevin's Notes
+Run UDA: `python main.py --uda_mode --uda_test_mode --check_after 2999`
