@@ -94,6 +94,19 @@ parser.add_argument('--is_position', default=False, type=bool)
 
 cfg, unknown = parser.parse_known_args()
 
+
+MAX_LENGTHS = {
+    "SST": 128,
+    "dbpedia": 256,
+    "imdb": 128
+}
+
+NUM_LABELS = {
+    "SST": 2,
+    "dbpedia": 10,
+    "imdb": 2
+}
+
 def linear_rampup(current, rampup_length):
     if rampup_length == 0:
         return 1.0
@@ -215,7 +228,7 @@ def main():
 
     ema_optimizer = None
     ema_model = None
-    model = models.Classifier(model_cfg, len(data.TaskDataset.labels))
+    model = models.Classifier(model_cfg, NUM_LABELS[cfg.task])
 
 
     if cfg.uda_mode:
@@ -229,7 +242,7 @@ def main():
         train_criterion = SemiLoss()
         criterion = nn.CrossEntropyLoss()
         optimizer = torch.optim.Adam(model.parameters(), lr=cfg.lr)
-        ema_model = models.Classifier(model_cfg, len(data.TaskDataset.labels))
+        ema_model = models.Classifier(model_cfg,  NUM_LABELS[cfg.task])
         for param in ema_model.parameters():
             param.detach_()
         ema_optimizer= WeightEMA(cfg, model, ema_model, alpha=cfg.ema_decay)
