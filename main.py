@@ -56,7 +56,7 @@ parser.add_argument('--total_steps', default=10000, type=int)
 parser.add_argument('--check_after', default=4999, type=int)
 parser.add_argument('--early_stopping', default=10, type=int)
 parser.add_argument('--max_seq_length', default=128, type=int)
-parser.add_argument('--train_batch_size', default=10, type=int)
+parser.add_argument('--train_batch_size', default=16, type=int)
 parser.add_argument('--eval_batch_size', default=32, type=int)
 
 parser.add_argument('--no_sup_loss', action='store_true')
