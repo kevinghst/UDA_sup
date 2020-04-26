@@ -295,7 +295,7 @@ def main():
         #unsup_loss = torch.mean((probs_u - targets_u)**2)
 
         # kl
-        aug_log_prob = F.log_softmax(logits[sup_size:], dim=-1)
+        aug_log_prob = F.log_softmax(all_logits[sup_size:], dim=-1)
         unsup_loss = torch.sum(unsup_criterion(aug_log_prob, targets_u), dim=-1)
 
 
