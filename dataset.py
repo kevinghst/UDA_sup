@@ -189,11 +189,12 @@ class DataSet():
             input_ids_dev, attention_masks_dev, seg_ids_dev, label_ids_dev, num_tokens_dev = self.preprocess(df_dev)
 
         # Combine the training inputs into a TensorDataset.
-        train_dataset = TensorDataset(input_ids_train, attention_masks_train, seg_ids_train, label_ids_train, num_tokens_train)
-        val_dataset = TensorDataset(input_ids_dev, attention_masks_dev, seg_ids_dev, label_ids_dev, num_tokens_dev)
+        train_dataset = TensorDataset(input_ids_train, seg_ids_train, attention_masks_train, label_ids_train)
+        val_dataset = TensorDataset(input_ids_dev, seg_ids_dev, attention_masks_dev, label_ids_dev, num_tokens_dev)
+
 
         unsup_dataset = None
         if self.cfg.uda_mode:
-            unsup_dataset = TensorDataset(ori_input_ids, ori_input_mask, ori_seg_ids, aug_input_ids, aug_input_mask, aug_seg_ids)
+            unsup_dataset = TensorDataset(ori_input_ids, ori_seg_ids, ori_input_mask, aug_input_ids, aug_seg_ids, aug_input_mask)
 
         return train_dataset, val_dataset, unsup_dataset

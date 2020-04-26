@@ -210,7 +210,7 @@ def main():
         )
 
     if cfg.uda_mode or cfg.mixmatch_mode:
-        data_iter = [train_dataloader, unsup_dataloader, validation_dataloader]
+        data_iter = [train_dataloader, unsup_dataloader, validation_dataloader] 
     else:
         data_iter = [train_dataloader]
 
