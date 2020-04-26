@@ -33,7 +33,7 @@ parser = argparse.ArgumentParser(description='PyTorch UDA Training')
 
 parser.add_argument('--seed', default=42, type=int)
 parser.add_argument('--data_seed', default=42, type=int)
-parser.add_argument('--lr', default=0.000025, type=float)
+parser.add_argument('--lr', default=0.00004, type=float)
 parser.add_argument('--warmup', default=0.1, type=float)
 parser.add_argument('--do_lower_case', default=True, type=bool)
 parser.add_argument('--mode', default='train_eval', type=str)
