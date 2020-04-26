@@ -297,7 +297,6 @@ def main():
         final_loss = sup_loss + cfg.uda_coeff*unsup_loss
 
         return final_loss, sup_loss, unsup_loss
-    return sup_loss, None, None
 
 
     def get_loss(model, sup_batch, unsup_batch, global_step):
