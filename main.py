@@ -298,7 +298,7 @@ def main():
         aug_log_prob = F.log_softmax(all_logits[sup_size:], dim=-1)
         unsup_loss = torch.sum(unsup_criterion(aug_log_prob, targets_u), dim=-1)
 
-
+        pdb.set_trace()
 
         final_loss = sup_loss + cfg.uda_coeff*unsup_loss
 
