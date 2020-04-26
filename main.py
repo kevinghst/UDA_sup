@@ -373,6 +373,7 @@ def main():
                 https://github.com/google-research/uda/blob/master/text/uda.py#L175
             """
             unsup_loss = torch.sum(unsup_criterion(aug_log_prob, ori_prob), dim=-1)
+            pdb.set_trace()
             unsup_loss = torch.sum(unsup_loss * unsup_loss_mask, dim=-1) / torch.max(torch.sum(unsup_loss_mask, dim=-1), torch_device_one())
             pdb.set_trace()
             final_loss = sup_loss + cfg.uda_coeff*unsup_loss
