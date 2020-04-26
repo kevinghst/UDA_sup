@@ -190,7 +190,7 @@ class DataSet():
 
         # Combine the training inputs into a TensorDataset.
         train_dataset = TensorDataset(input_ids_train, seg_ids_train, attention_masks_train, label_ids_train)
-        val_dataset = TensorDataset(input_ids_dev, seg_ids_dev, attention_masks_dev, label_ids_dev, num_tokens_dev)
+        val_dataset = TensorDataset(input_ids_dev, seg_ids_dev, attention_masks_dev, label_ids_dev)
 
 
         unsup_dataset = None
