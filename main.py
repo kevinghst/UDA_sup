@@ -292,7 +292,7 @@ def main():
 
         #unsup loss
         probs_u = torch.softmax(all_logits[sup_size:], dim=1)
-        unsup_loss = torch.mean((probs_u - unsup_labels)**2)
+        unsup_loss = torch.mean((probs_u - targets_u)**2)
 
         final_loss = sup_loss + cfg.uda_coeff*unsup_loss
 
