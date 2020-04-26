@@ -198,7 +198,7 @@ def main():
     validation_dataloader = DataLoader(
                 val_dataset, # The validation samples.
                 sampler = SequentialSampler(val_dataset), # Pull out batches sequentially.
-                batch_size = cfg.val_batch_size # Evaluate with this batch size.
+                batch_size = cfg.eval_batch_size # Evaluate with this batch size.
             )
 
     unsup_dataloader = None
@@ -210,8 +210,7 @@ def main():
         )
 
     if cfg.uda_mode or cfg.mixmatch_mode:
-        data_iter = [train_dataloader, unsup_dataloader] if cfg.mode=='train' \
-            else [train_dataloader, unsup_dataloader, validation_dataloader]  # train_eval
+        data_iter = [train_dataloader, unsup_dataloader, validation_dataloader]
     else:
         data_iter = [train_dataloader]
 
