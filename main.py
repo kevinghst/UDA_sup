@@ -374,7 +374,7 @@ def main():
             """
             unsup_loss = torch.sum(unsup_criterion(aug_log_prob, ori_prob), dim=-1)
             unsup_loss = torch.sum(unsup_loss * unsup_loss_mask, dim=-1) / torch.max(torch.sum(unsup_loss_mask, dim=-1), torch_device_one())
-
+            pdb.set_trace()
             final_loss = sup_loss + cfg.uda_coeff*unsup_loss
 
             return final_loss, sup_loss, unsup_loss
