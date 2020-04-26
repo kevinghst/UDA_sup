@@ -282,7 +282,7 @@ def main():
         sup_size = label_ids.shape[0]
         sup_loss = sup_criterion(all_logits[:sup_size], label_ids)
         if cfg.tsa and cfg.tsa != "none":
-            tsa_thresh = get_tsa_thresh(cfg.tsa, global_step, cfg.total_steps, start=1./logits.shape[-1], end=1)
+            tsa_thresh = get_tsa_thresh(cfg.tsa, global_step, cfg.total_steps, start=1./all_logits.shape[-1], end=1)
             larger_than_threshold = torch.exp(-sup_loss) > tsa_thresh   # prob = exp(log_prob), prob > tsa_threshold
             # larger_than_threshold = torch.sum(  F.softmax(pred[:sup_size]) * torch.eye(num_labels)[sup_label_ids]  , dim=-1) > tsa_threshold
             loss_mask = torch.ones_like(label_ids, dtype=torch.float32) * (1 - larger_than_threshold.type(torch.float32))
