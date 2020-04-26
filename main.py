@@ -85,7 +85,6 @@ parser.add_argument('--eval_data_dir', default="data/imdb_sup_test.txt", type=st
 parser.add_argument('--model_file', default="", type=str)
 parser.add_argument('--pretrain_file', default="BERT_Base_Uncased/bert_model.ckpt", type=str)
 parser.add_argument('--vocab', default="BERT_Base_Uncased/vocab.txt", type=str)
-parser.add_argument('--task', default="imdb", type=str)
 
 parser.add_argument('--save_steps', default=100, type=int)
 parser.add_argument('--check_steps', default=250, type=int)
