@@ -251,7 +251,7 @@ class Trainer(object):
             # Calculate the accuracy for this batch of test sentences, and
             # accumulate it over all batches.
 
-            if self.num_labels == 2:
+            if cfg.num_labels == 2:
                 logits = logits.detach().cpu().numpy()
                 b_labels = b_labels.to('cpu').numpy()
                 total_prec1 += bin_accuracy(logits, b_labels)
