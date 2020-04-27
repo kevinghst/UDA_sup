@@ -233,7 +233,7 @@ class Trainer(object):
         # Evaluate data for one epoch
         for batch in val_loader:
             batch = [t.to(device) for t in batch]
-            b_input_ids, b_input_mask, b_segment_ids, b_labels, b_num_tokens = batch
+            b_input_ids, b_input_mask, b_segment_ids, b_labels = batch
             batch_size = b_input_ids.size(0)
 
             with torch.no_grad():        
