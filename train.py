@@ -147,8 +147,6 @@ class Trainer(object):
                 if self.cfg.mixmatch_mode:
                     results = self.eval(get_acc, None, ema_model)
                 else:
-                    results = self.eval(get_acc, None, model)
-
                     total_accuracy, avg_val_loss, duration = self.validate()
 
                 logger.add_scalars('data/scalar_group', {'eval_acc' : total_accuracy}, global_step)
