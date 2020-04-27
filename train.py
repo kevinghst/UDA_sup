@@ -78,7 +78,7 @@ class Trainer(object):
 
         global_step = 0
         loss_sum = 0.
-        max_acc = [0., 0, 0.]   # acc, step, loss
+        max_acc = [0., 0, 0., 0.]   # acc, step, val_loss, train_loss
         no_improvement = 0
 
         sup_batch_size = None
@@ -152,14 +152,17 @@ class Trainer(object):
                 logger.add_scalars('data/scalar_group', {'eval_acc' : total_accuracy}, global_step)
                 if max_acc[0] < total_accuracy:
                     self.save(global_step)
-                    max_acc = total_accuracy, global_step, avg_val_loss
+                    max_acc = total_accuracy, global_step, avg_val_loss, final_loss.item()
                     no_improvement = 0
                 else:
                     no_improvement += 1
 
                 print("  Top 1 Accuracy: {0:.4f}".format(total_accuracy))
                 print("  Validation Loss: {0:.2f}".format(avg_val_loss))
-                print('Max Accuracy : %5.3f Best Loss : %5.3f Max global_steps : %d Cur global_steps : %d' %(max_acc[0], max_acc[2], max_acc[1], global_step), end='\n\n')
+                print("  Train Loss: {0:.2f}".format(final_loss.item()))
+                print("  Learning rate: {0:.2f}".format(self.optimizer.get_lr()[0]))
+
+                print('Max Accuracy : %5.3f Best Val Loss :  %5.3f Best Train Loss :  %5.3f Max global_steps : %d Cur global_steps : %d' %(max_acc[0], max_acc[2], max_acc[3], max_acc[1], global_step), end='\n\n')
                 
                 if no_improvement == self.cfg.early_stopping:
                     print("Early stopped")
@@ -176,10 +179,11 @@ class Trainer(object):
                         total_accuracy, avg_val_loss = self.validate()
                     logger.add_scalars('data/scalar_group', {'eval_acc' : total_accuracy}, global_step)
                     if max_acc[0] < total_accuracy:
-                        max_acc = total_accuracy, global_step                
+                        max_acc = total_accuracy, global_step, avg_val_loss, final_loss.item()             
                     print("  Top 1 Accuracy: {0:.4f}".format(total_accuracy))
                     print("  Validation Loss: {0:.2f}".format(avg_val_loss))
-                    print('Max Accuracy : %5.3f Best Loss : %5.3f Max global_steps : %d Cur global_steps : %d' %(max_acc[0], max_acc[2], max_acc[1], global_step), end='\n\n')
+                    print("  Train Loss: {0:.2f}".format(final_loss.item()))
+                    print('Max Accuracy : %5.3f Best Val Loss :  %5.3f Best Train Loss :  %5.3f Max global_steps : %d Cur global_steps : %d' %(max_acc[0], max_acc[2], max_acc[3], max_acc[1], global_step), end='\n\n')
                 self.save(global_step)
                 return
         return global_step
