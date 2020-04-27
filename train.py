@@ -30,7 +30,7 @@ from torch.nn import CrossEntropyLoss
 from utils import checkpoint
 # from utils.logger import Logger
 from tensorboardX import SummaryWriter
-from utils.utils import output_logging
+from utils.utils import output_logging, bin_accuracy, multi_accuracy
 import pdb
 
 
