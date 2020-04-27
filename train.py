@@ -21,9 +21,11 @@ import json
 from copy import deepcopy
 from typing import NamedTuple
 from tqdm import tqdm
+import time
 
 import torch
 import torch.nn as nn
+from torch.nn import CrossEntropyLoss
 
 from utils import checkpoint
 # from utils.logger import Logger
@@ -76,7 +78,7 @@ class Trainer(object):
 
         global_step = 0
         loss_sum = 0.
-        max_acc = [0., 0]   # acc, step
+        max_acc = [0., 0, 0.]   # acc, step, loss
         no_improvement = 0
 
         sup_batch_size = None
@@ -146,17 +148,20 @@ class Trainer(object):
                     results = self.eval(get_acc, None, ema_model)
                 else:
                     results = self.eval(get_acc, None, model)
-                total_accuracy = torch.cat(results).mean().item()
+
+                    total_accuracy, avg_val_loss, duration = self.validate()
+
                 logger.add_scalars('data/scalar_group', {'eval_acc' : total_accuracy}, global_step)
                 if max_acc[0] < total_accuracy:
                     self.save(global_step)
-                    max_acc = total_accuracy, global_step
+                    max_acc = total_accuracy, global_step, avg_val_loss
                     no_improvement = 0
                 else:
                     no_improvement += 1
 
-                print('Accuracy : %5.3f' % total_accuracy)
-                print('Max Accuracy : %5.3f Max global_steps : %d Cur global_steps : %d' %(max_acc[0], max_acc[1], global_step), end='\n\n')
+                print("  Top 1 Accuracy: {0:.4f}".format(total_accuracy))
+                print("  Validation Loss: {0:.2f}".format(avg_val_loss))
+                print('Max Accuracy : %5.3f Best Loss : %5.3f Max global_steps : %d Cur global_steps : %d' %(max_acc[0], max_acc[2], max_acc[1], global_step), end='\n\n')
                 
                 if no_improvement == self.cfg.early_stopping:
                     print("Early stopped")
@@ -181,6 +186,7 @@ class Trainer(object):
                 return
         return global_step
 
+
     def eval(self, evaluate, model_file, model):
         """ evaluation function """
         if model_file:
@@ -204,6 +210,67 @@ class Trainer(object):
             iter_bar.set_description('Eval Acc=%5.3f' % accuracy)
         return results
             
+
+    def validate(self):
+        t0 = time.time()
+
+        print("Running validation")
+
+        model = self.model
+        device = self.device
+        val_loader = self.eval_iter
+        cfg = self.cfg
+
+        # Put the model in evaluation mode--the dropout layers behave differently
+        # during evaluation.
+        model.eval()
+
+        # Tracking variables 
+        total_eval_accuracy = 0
+        total_eval_loss = 0
+        nb_eval_steps = 0
+        total_prec1 = 0
+        total_prec5 = 0
+
+        # Evaluate data for one epoch
+        for batch in val_loader:
+            batch = [t.to(device) for t in batch]
+            b_input_ids, b_input_mask, b_segment_ids, b_labels, b_num_tokens = batch
+            batch_size = b_input_ids.size(0)
+
+            with torch.no_grad():        
+                logits = model(
+                    b_input_ids,
+                    b_segment_ids,
+                    b_input_mask
+                )
+                    
+                loss_fct = CrossEntropyLoss()
+                loss = loss_fct(logits, b_labels)
+            # Accumulate the validation loss.
+            total_eval_loss += loss.item()
+
+            # Calculate the accuracy for this batch of test sentences, and
+            # accumulate it over all batches.
+
+            if self.num_labels == 2:
+                logits = logits.detach().cpu().numpy()
+                b_labels = b_labels.to('cpu').numpy()
+                total_prec1 += bin_accuracy(logits, b_labels)
+            else:
+                prec1, prec5 = multi_accuracy(logits, b_labels, topk=(1,5))
+                total_prec1 += prec1
+                total_prec5 += prec5
+
+        avg_prec1 = total_prec1 / len(val_loader)
+        avg_prec5 = total_prec5 / len(val_loader)
+
+        avg_val_loss = total_eval_loss / len(val_loader)
+        
+
+        return avg_prec1, avg_val_loss, validation_time
+
+
     def load(self, model_file, pretrain_file):
         """ between model_file and pretrain_file, only one model will be loaded """
         if model_file:
