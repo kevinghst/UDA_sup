@@ -309,13 +309,14 @@ def main():
         ori_input_ids, ori_segment_ids, ori_input_mask, \
         aug_input_ids, aug_segment_ids, aug_input_mask = unsup_batch
 
-        input_ids = torch.cat((input_ids, aug_input_ids), dim=0)
-        segment_ids = torch.cat((segment_ids, aug_segment_ids), dim=0)
-        input_mask = torch.cat((input_mask, aug_input_mask), dim=0)
-        
         sup_size = input_ids.size(0)
         label_ids = torch.zeros(sup_size, 2).scatter_(1, og_label_ids.cpu().view(-1,1), 1)
         label_ids = label_ids.cuda(non_blocking=True)
+
+        input_ids = torch.cat((input_ids, aug_input_ids), dim=0)
+        segment_ids = torch.cat((segment_ids, aug_segment_ids), dim=0)
+        input_mask = torch.cat((input_mask, aug_input_mask), dim=0)
+       
 
         # logits
         hidden = model(
