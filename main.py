@@ -49,6 +49,7 @@ parser.add_argument('--unsup_cap', default=-1, type=int)
 parser.add_argument('--uda_mode', action='store_true')
 parser.add_argument('--mixmatch_mode', action='store_true')
 parser.add_argument('--uda_test_mode', action='store_true')
+parser.add_argument('--uda_test_mode_two', action='store_true')
 parser.add_argument('--sup_mixup', action='store_true')
 parser.add_argument('--unsup_mixup', action='store_true')
 
@@ -262,15 +263,6 @@ def main():
         ori_input_ids, ori_segment_ids, ori_input_mask, \
         aug_input_ids, aug_segment_ids, aug_input_mask = unsup_batch
 
-        with torch.no_grad():
-            outputs_u = model(ori_input_ids, ori_segment_ids, ori_input_mask)
-            outputs_u2 = model(aug_input_ids, aug_segment_ids, aug_input_mask)
-            p = (torch.softmax(outputs_u, dim=1) + torch.softmax(outputs_u2, dim=1)) / 2
-            pt = p**(1/cfg.uda_softmax_temp)
-            targets_u = pt / pt.sum(dim=1, keepdim=True)
-            targets_u = targets_u.detach()
-
-        targets_u = torch.cat([targets_u, targets_u], dim=0)
 
         all_ids = torch.cat([input_ids, ori_input_ids, aug_input_ids], dim=0)
         all_mask = torch.cat([input_mask, ori_input_mask, aug_input_mask], dim=0)
@@ -290,6 +282,17 @@ def main():
         else:
             sup_loss = torch.mean(sup_loss)
 
+        #unsup loss
+        with torch.no_grad():
+            outputs_u = model(ori_input_ids, ori_segment_ids, ori_input_mask)
+            outputs_u2 = model(aug_input_ids, aug_segment_ids, aug_input_mask)
+            p = (torch.softmax(outputs_u, dim=1) + torch.softmax(outputs_u2, dim=1)) / 2
+            pt = p**(1/cfg.uda_softmax_temp)
+            targets_u = pt / pt.sum(dim=1, keepdim=True)
+            targets_u = targets_u.detach()
+
+        targets_u = torch.cat([targets_u, targets_u], dim=0)
+
         # l2
         #probs_u = torch.softmax(all_logits[sup_size:], dim=1)
         #unsup_loss = torch.mean((probs_u - targets_u)**2)
@@ -307,13 +310,13 @@ def main():
 
         # batch
         input_ids, segment_ids, input_mask, label_ids = sup_batch
-        if unsup_batch:
-            ori_input_ids, ori_segment_ids, ori_input_mask, \
-            aug_input_ids, aug_segment_ids, aug_input_mask = unsup_batch
 
-            input_ids = torch.cat((input_ids, aug_input_ids), dim=0)
-            segment_ids = torch.cat((segment_ids, aug_segment_ids), dim=0)
-            input_mask = torch.cat((input_mask, aug_input_mask), dim=0)
+        ori_input_ids, ori_segment_ids, ori_input_mask, \
+        aug_input_ids, aug_segment_ids, aug_input_mask = unsup_batch
+
+        input_ids = torch.cat((input_ids, aug_input_ids), dim=0)
+        segment_ids = torch.cat((segment_ids, aug_segment_ids), dim=0)
+        input_mask = torch.cat((input_mask, aug_input_mask), dim=0)
             
         # logits
         hidden = model(
@@ -348,18 +351,6 @@ def main():
         # aug
         aug_log_prob = F.log_softmax(logits[sup_size:], dim=-1)
 
-        # KLdiv loss
-        """
-            nn.KLDivLoss (kl_div)
-            input : log_prob (log_softmax)
-            target : prob    (softmax)
-            https://pytorch.org/docs/stable/nn.html
-
-            unsup_loss is divied by number of unsup_loss_mask
-            it is different from the google UDA official
-            The official unsup_loss is divided by total
-            https://github.com/google-research/uda/blob/master/text/uda.py#L175
-        """
         unsup_loss = torch.mean(torch.sum(unsup_criterion(aug_log_prob, ori_prob), dim=-1))
         final_loss = sup_loss + cfg.uda_coeff*unsup_loss
 
@@ -462,6 +453,8 @@ def main():
             trainer.train(get_mixmatch_loss_short, get_acc, cfg.model_file, cfg.pretrain_file)
         elif cfg.uda_test_mode:
             trainer.train(get_loss_test, get_acc, cfg.model_file, cfg.pretrain_file)
+        elif cfg.uda_test_mode_two:
+            trainer.train(get_label_guess_loss, get_acc, cfg.model_file, cfg.pretrain_file)
         else:
             trainer.train(get_loss, get_acc, cfg.model_file, cfg.pretrain_file)
 
