@@ -122,11 +122,11 @@ class Trainer(object):
             # print loss
             global_step += 1
             loss_sum += final_loss.item()
-            if ssl_mode:
-                iter_bar.set_description('final=%5.3f unsup=%5.3f sup=%5.3f'\
-                        % (final_loss.item(), unsup_loss.item(), sup_loss.item()))
-            else:
-                iter_bar.set_description('loss=%5.3f' % (final_loss.item()))
+            #if ssl_mode:
+            #    iter_bar.set_description('final=%5.3f unsup=%5.3f sup=%5.3f'\
+            #            % (final_loss.item(), unsup_loss.item(), sup_loss.item()))
+            #else:
+            #    iter_bar.set_description('loss=%5.3f' % (final_loss.item()))
 
             # logging            
             if self.cfg.uda_mode:
@@ -160,7 +160,7 @@ class Trainer(object):
                 print("  Top 1 Accuracy: {0:.4f}".format(total_accuracy))
                 print("  Validation Loss: {0:.2f}".format(avg_val_loss))
                 print("  Train Loss: {0:.2f}".format(final_loss.item()))
-                print("  Learning rate: {0:.2f}".format(self.optimizer.get_lr()[0]))
+                print("  Learning rate: {0:.7f}".format(self.optimizer.get_lr()[0]))
 
                 print('Max Accuracy : %5.3f Best Val Loss :  %5.3f Best Train Loss :  %5.3f Max global_steps : %d Cur global_steps : %d' %(max_acc[0], max_acc[2], max_acc[3], max_acc[1], global_step), end='\n\n')
                 
