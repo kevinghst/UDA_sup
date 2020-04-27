@@ -1,4 +1,4 @@
-def get_loss(model, sup_batch, unsup_batch, global_step):
+def get_loss(model, sup_batch, unsup_batch, global_step): #original get_loss
     # logits -> prob(softmax) -> log_prob(log_softmax)
 
     # batch
@@ -72,6 +72,43 @@ def get_loss(model, sup_batch, unsup_batch, global_step):
         return final_loss, sup_loss, unsup_loss
     return sup_loss, None, None
 
+def mixmatch_loss_no_mixup(model, sup_batch, unsup_batch, global_step):
+    # batch
+    input_ids, segment_ids, input_mask, label_ids = sup_batch
+    ori_input_ids, ori_segment_ids, ori_input_mask, \
+    aug_input_ids, aug_segment_ids, aug_input_mask = unsup_batch
+
+
+    all_ids = torch.cat([input_ids, ori_input_ids, aug_input_ids], dim=0)
+    all_mask = torch.cat([input_mask, ori_input_mask, aug_input_mask], dim=0)
+    all_seg = torch.cat([segment_ids, ori_segment_ids, aug_segment_ids], dim=0)
+
+    all_logits = model(all_ids, all_seg, all_mask)
+            
+    #sup loss
+    sup_size = label_ids.shape[0]
+    sup_loss = sup_criterion(all_logits[:sup_size], label_ids)
+    sup_loss = torch.mean(sup_loss)
+
+    #unsup loss
+    with torch.no_grad():
+        outputs_u = model(ori_input_ids, ori_segment_ids, ori_input_mask)
+        outputs_u2 = model(aug_input_ids, aug_segment_ids, aug_input_mask)
+        p = (torch.softmax(outputs_u, dim=1) + torch.softmax(outputs_u2, dim=1)) / 2
+        pt = p**(1/cfg.uda_softmax_temp)
+        targets_u = pt / pt.sum(dim=1, keepdim=True)
+        targets_u = targets_u.detach()
+
+    targets_u = torch.cat([targets_u, targets_u], dim=0)
+
+    # l2
+    probs_u = torch.softmax(all_logits[sup_size:], dim=1)
+    unsup_loss = torch.mean((probs_u - targets_u)**2)
+
+    w = cfg.lambda_u * linear_rampup(global_step, cfg.total_steps)
+    final_loss = sup_loss + w * unsup_loss
+
+    return final_loss, sup_loss, unsup_loss
 
 
 def get_mixmatch_loss_two(model, sup_batch, unsup_batch, global_step):
