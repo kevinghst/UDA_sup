@@ -147,7 +147,7 @@ class Trainer(object):
                 if self.cfg.mixmatch_mode:
                     results = self.eval(get_acc, None, ema_model)
                 else:
-                    total_accuracy, avg_val_loss, duration = self.validate()
+                    total_accuracy, avg_val_loss = self.validate()
 
                 logger.add_scalars('data/scalar_group', {'eval_acc' : total_accuracy}, global_step)
                 if max_acc[0] < total_accuracy:
@@ -173,13 +173,13 @@ class Trainer(object):
                     if self.cfg.mixmatch_mode:
                         results = self.eval(get_acc, None, ema_model)
                     else:
-                        results = self.eval(get_acc, None, model)
-                    total_accuracy = torch.cat(results).mean().item()
+                        total_accuracy, avg_val_loss = self.validate()
                     logger.add_scalars('data/scalar_group', {'eval_acc' : total_accuracy}, global_step)
                     if max_acc[0] < total_accuracy:
                         max_acc = total_accuracy, global_step                
-                    print('Accuracy :', total_accuracy)
-                    print('Max Accuracy : %5.3f Max global_steps : %d Cur global_steps : %d' %(max_acc[0], max_acc[1], global_step), end='\n\n')
+                    print("  Top 1 Accuracy: {0:.4f}".format(total_accuracy))
+                    print("  Validation Loss: {0:.2f}".format(avg_val_loss))
+                    print('Max Accuracy : %5.3f Best Loss : %5.3f Max global_steps : %d Cur global_steps : %d' %(max_acc[0], max_acc[2], max_acc[1], global_step), end='\n\n')
                 self.save(global_step)
                 return
         return global_step
@@ -266,7 +266,7 @@ class Trainer(object):
         avg_val_loss = total_eval_loss / len(val_loader)
         
 
-        return avg_prec1, avg_val_loss, validation_time
+        return avg_prec1, avg_val_loss
 
 
     def load(self, model_file, pretrain_file):
