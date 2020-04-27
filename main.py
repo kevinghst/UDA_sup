@@ -337,44 +337,33 @@ def main():
             sup_loss = torch.mean(sup_loss)
 
         # unsup loss
-        if unsup_batch:
-            # ori
-            with torch.no_grad():
-                ori_logits = model(ori_input_ids, ori_segment_ids, ori_input_mask)
-                ori_prob   = F.softmax(ori_logits, dim=-1)    # KLdiv target
-                # temp control
-                ori_prob = ori_prob**(1/cfg.uda_softmax_temp)
-                ori_prob = ori_prob / ori_prob.sum(dim=1, keepdim=True)
-
-                # confidence-based masking
-                if cfg.uda_confidence_thresh != -1:
-                    unsup_loss_mask = torch.max(ori_prob, dim=-1)[0] > cfg.uda_confidence_thresh
-                    unsup_loss_mask = unsup_loss_mask.type(torch.float32)
-                else:
-                    unsup_loss_mask = torch.ones(len(logits) - sup_size, dtype=torch.float32)
-                unsup_loss_mask = unsup_loss_mask.to(_get_device())
+        # ori
+        with torch.no_grad():
+            ori_logits = model(ori_input_ids, ori_segment_ids, ori_input_mask)
+            ori_prob   = F.softmax(ori_logits, dim=-1)    # KLdiv target
+            # temp control
+            ori_prob = ori_prob**(1/cfg.uda_softmax_temp)
+            ori_prob = ori_prob / ori_prob.sum(dim=1, keepdim=True)
                     
-            # aug
-            aug_log_prob = F.log_softmax(logits[sup_size:], dim=-1)
+        # aug
+        aug_log_prob = F.log_softmax(logits[sup_size:], dim=-1)
 
-            # KLdiv loss
-            """
-                nn.KLDivLoss (kl_div)
-                input : log_prob (log_softmax)
-                target : prob    (softmax)
-                https://pytorch.org/docs/stable/nn.html
+        # KLdiv loss
+        """
+            nn.KLDivLoss (kl_div)
+            input : log_prob (log_softmax)
+            target : prob    (softmax)
+            https://pytorch.org/docs/stable/nn.html
 
-                unsup_loss is divied by number of unsup_loss_mask
-                it is different from the google UDA official
-                The official unsup_loss is divided by total
-                https://github.com/google-research/uda/blob/master/text/uda.py#L175
-            """
-            unsup_loss = torch.sum(unsup_criterion(aug_log_prob, ori_prob), dim=-1)
-            unsup_loss = torch.sum(unsup_loss * unsup_loss_mask, dim=-1) / torch.max(torch.sum(unsup_loss_mask, dim=-1), torch_device_one())
-            final_loss = sup_loss + cfg.uda_coeff*unsup_loss
+            unsup_loss is divied by number of unsup_loss_mask
+            it is different from the google UDA official
+            The official unsup_loss is divided by total
+            https://github.com/google-research/uda/blob/master/text/uda.py#L175
+        """
+        unsup_loss = torch.mean(torch.sum(unsup_criterion(aug_log_prob, ori_prob), dim=-1))
+        final_loss = sup_loss + cfg.uda_coeff*unsup_loss
 
-            return final_loss, sup_loss, unsup_loss
-        return sup_loss, None, None
+        return final_loss, sup_loss, unsup_loss
 
 
 
