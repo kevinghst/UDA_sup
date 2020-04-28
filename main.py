@@ -330,6 +330,9 @@ def main():
         else:
             sup_loss = torch.mean(sup_loss)
 
+        if cfg.no_unsup_loss:
+            return sup_loss, sup_loss, sup_loss
+
         # unsup loss
         with torch.no_grad():
             ori_logits = model(ori_input_ids, ori_segment_ids, ori_input_mask)
