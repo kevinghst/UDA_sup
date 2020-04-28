@@ -159,7 +159,11 @@ class Transformer(nn.Module):
         self.embed = Embeddings(cfg)
         self.blocks = nn.ModuleList([Block(cfg) for _ in range(cfg.n_layers)])   # h 번 반복
 
-    def forward(self, x, seg, mask):
+    def forward(
+            self, 
+            x=None, seg=None, mask=None,
+            mixup=None, shuffle_idx=None, l=1
+        ):
         h = self.embed(x, seg)
         for block in self.blocks:
             h = block(h, mask)
@@ -188,11 +192,14 @@ class Classifier(nn.Module):
             l=1
         ):
         if input_h is None:
-            h = self.transformer(input_ids, segment_ids, input_mask)
+            h = self.transformer(
+                x=input_ids, seg=segment_ids, mask=input_mask, 
+                mixup=mixup, shuffle_idx=shuffle_idx, l=l
+            )
             # only use the first h in the sequence
             pooled_h = self.activ(self.fc(h[:, 0])) # 맨앞의 [CLS]만 뽑아내기
 
-            if cls.mixup == 'cls':
+            if mixup == 'cls':
                 mixed_pooled_h = mixup(pooled_h, l, shuffle_idx)
 
             if output_h:
