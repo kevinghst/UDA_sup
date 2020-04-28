@@ -350,15 +350,17 @@ def main():
             segment_ids=ori_segment_ids, 
             input_mask=ori_input_mask,
             output_h=True,
-            mixup=cfg.mixup,
+            mixup=None,
             shuffle_idx=idx,
             l=l
         )
 
+
+        mixed_h = mixup_op(hidden, l, idx)
         mixed_prob = mixup_op(ori_prob, l, idx)
 
         # continue forward pass
-        logits = model(input_h=hidden)
+        logits = model(input_h=mixed_h)
 
         probs_u = torch.softmax(logits, dim=1)
         unsup_loss = torch.mean((probs_u - mixed_prob)**2)
