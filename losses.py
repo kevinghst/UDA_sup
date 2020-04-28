@@ -72,7 +72,7 @@ def get_loss(model, sup_batch, unsup_batch, global_step): #original get_loss
         return final_loss, sup_loss, unsup_loss
     return sup_loss, None, None
 
-
+# original get_loss, restructured
 def get_loss_test(model, sup_batch, unsup_batch, global_step):
     # logits -> prob(softmax) -> log_prob(log_softmax)
 

@@ -25,7 +25,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from utils.utils import split_last, merge_last
+from utils.utils import split_last, merge_last, mixup
 
 
 class Config(NamedTuple):
@@ -176,11 +176,25 @@ class Classifier(nn.Module):
         self.drop = nn.Dropout(cfg.p_drop_hidden)
         self.classifier = nn.Linear(cfg.dim, n_labels)
 
-    def forward(self, input_ids=None, segment_ids=None, input_mask=None, output_h=False, input_h=None):
+    def forward(
+            self,
+            input_ids=None, 
+            segment_ids=None, 
+            input_mask=None, 
+            output_h=False, 
+            input_h=None,
+            mixup=None,
+            shuffle_idx=None,
+            l=1
+        ):
         if input_h is None:
             h = self.transformer(input_ids, segment_ids, input_mask)
             # only use the first h in the sequence
             pooled_h = self.activ(self.fc(h[:, 0])) # 맨앞의 [CLS]만 뽑아내기
+
+            if cls.mixup == 'cls':
+                mixed_pooled_h = mixup(pooled_h, l, shuffle_idx)
+
             if output_h:
                 return pooled_h
         else:

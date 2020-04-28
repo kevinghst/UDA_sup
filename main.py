@@ -21,7 +21,7 @@ import torch.nn.functional as F
 import models
 import train
 from load_data import load_data
-from utils.utils import set_seeds, get_device, _get_device, torch_device_one
+from utils.utils import set_seeds, get_device, _get_device, torch_device_one, mixup
 from utils import optim, configuration
 import numpy as np
 
@@ -77,6 +77,7 @@ parser.add_argument('--alpha', default=1, type=float)
 parser.add_argument('--lambda_u', default=75, type=int)
 parser.add_argument('--T', default=0.5, type=float)
 parser.add_argument('--ema_decay', default=0.999, type=float)
+parser.add_argument('--mixup', default='cls', type=str)
 
 parser.add_argument('--data_parallel', default=True, type=bool)
 parser.add_argument('--need_prepro', default=False, type=bool)
@@ -338,23 +339,23 @@ def main():
             ori_logits = model(ori_input_ids, ori_segment_ids, ori_input_mask)
             ori_prob   = F.softmax(ori_logits, dim=-1)    # KLdiv target
 
-        hidden = model(
-            input_ids=ori_input_ids, 
-            segment_ids=ori_segment_ids, 
-            input_mask=ori_input_mask,
-            output_h=True
-        )
 
         # mixup
         l = np.random.beta(cfg.alpha, cfg.alpha)
         l = max(l, 1-l)
         idx = torch.randperm(hidden.size(0))
 
-        h_a, h_b = hidden, hidden[idx]
-        mixed_h = l * h_a + (1 - l) * h_b
+        hidden = model(
+            input_ids=ori_input_ids, 
+            segment_ids=ori_segment_ids, 
+            input_mask=ori_input_mask,
+            output_h=True,
+            mixup=cfg.mixup,
+            shuffle_idx=idx,
+            l=l
+        )
 
-        prob_a, prob_b = ori_prob, ori_prob[idx]
-        mixed_prob = l * prob_a + (1-l) * prob_b
+        mixed_prob = mixup(ori_prob, l, idx)
 
         # continue forward pass
         logits = model(input_h=mixed_h)
@@ -364,8 +365,6 @@ def main():
 
         final_loss = sup_loss + cfg.uda_coeff*unsup_loss
         return final_loss, sup_loss, unsup_loss
-
-
 
 
     def get_loss_mixup(model, sup_batch, unsup_batch, global_step):

@@ -45,6 +45,12 @@ def multi_accuracy(output, target, topk=(1,)):
         res.append(correct_k.mul_(100.0 / batch_size))
     return res
 
+def mixup(input, l, idx):
+    input_a, input_b = input, input[idx]
+    mixed_input = l * input_a + (1 - l) * input_b
+
+    return mixed_input
+
 def torch_device_one():
     return torch.tensor(1.).to(_get_device())
 
