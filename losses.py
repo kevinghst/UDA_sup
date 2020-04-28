@@ -72,6 +72,58 @@ def get_loss(model, sup_batch, unsup_batch, global_step): #original get_loss
         return final_loss, sup_loss, unsup_loss
     return sup_loss, None, None
 
+
+def get_loss_test(model, sup_batch, unsup_batch, global_step):
+    # logits -> prob(softmax) -> log_prob(log_softmax)
+
+    # batch
+    input_ids, segment_ids, input_mask, label_ids = sup_batch
+    ori_input_ids, ori_segment_ids, ori_input_mask, \
+    aug_input_ids, aug_segment_ids, aug_input_mask = unsup_batch
+
+    input_ids = torch.cat((input_ids, aug_input_ids), dim=0)
+    segment_ids = torch.cat((segment_ids, aug_segment_ids), dim=0)
+    input_mask = torch.cat((input_mask, aug_input_mask), dim=0)
+            
+    # logits
+    hidden = model(
+        input_ids=input_ids, 
+        segment_ids=segment_ids, 
+        input_mask=input_mask,
+        output_h=True
+    )
+    logits = model(input_h=hidden)
+
+    # sup loss
+    sup_size = label_ids.shape[0]            
+    sup_loss = sup_criterion(logits[:sup_size], label_ids)  # shape : train_batch_size
+    if cfg.tsa and cfg.tsa != "none":
+        tsa_thresh = get_tsa_thresh(cfg.tsa, global_step, cfg.total_steps, start=1./logits.shape[-1], end=1)
+        larger_than_threshold = torch.exp(-sup_loss) > tsa_thresh   # prob = exp(log_prob), prob > tsa_threshold
+        # larger_than_threshold = torch.sum(  F.softmax(pred[:sup_size]) * torch.eye(num_labels)[sup_label_ids]  , dim=-1) > tsa_threshold
+        loss_mask = torch.ones_like(label_ids, dtype=torch.float32) * (1 - larger_than_threshold.type(torch.float32))
+        sup_loss = torch.sum(sup_loss * loss_mask, dim=-1) / torch.max(torch.sum(loss_mask, dim=-1), torch_device_one())
+    else:
+        sup_loss = torch.mean(sup_loss)
+
+    # unsup loss
+    # ori
+    with torch.no_grad():
+        ori_logits = model(ori_input_ids, ori_segment_ids, ori_input_mask)
+        ori_prob   = F.softmax(ori_logits, dim=-1)    # KLdiv target
+        # temp control
+        ori_prob = ori_prob**(1/cfg.uda_softmax_temp)
+        ori_prob = ori_prob / ori_prob.sum(dim=1, keepdim=True)
+                    
+    # aug
+    aug_log_prob = F.log_softmax(logits[sup_size:], dim=-1)
+
+    unsup_loss = torch.mean(torch.sum(unsup_criterion(aug_log_prob, ori_prob), dim=-1))
+    final_loss = sup_loss + cfg.uda_coeff*unsup_loss
+
+    return final_loss, sup_loss, unsup_loss
+
+
 def mixmatch_loss_no_mixup(model, sup_batch, unsup_batch, global_step):
     # batch
     input_ids, segment_ids, input_mask, label_ids = sup_batch
