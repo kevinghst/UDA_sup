@@ -5,7 +5,7 @@
 #SBATCH --time=12:00:00
 #SBATCH --job-name="UDA"
 
-source activate tf-gpu
+source activate mixmatch
 
 cd /scratch/wz1232/UDA_pytorch
 $1
