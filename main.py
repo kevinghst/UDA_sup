@@ -38,6 +38,7 @@ parser.add_argument('--warmup', default=0.1, type=float)
 parser.add_argument('--do_lower_case', default=True, type=bool)
 parser.add_argument('--mode', default='train_eval', type=str)
 parser.add_argument('--model_cfg', default='config/bert_base.json', type=str)
+parser.add_argument('--hide_tqdm', action='store_true')
 
 #Dataset
 parser.add_argument('--task', default="imdb", type=str)

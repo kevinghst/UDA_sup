@@ -87,8 +87,8 @@ class Trainer(object):
         # Progress bar is set by unsup or sup data
         # uda_mode == True --> sup_iter is repeated
         # uda_mode == False --> sup_iter is not repeated
-        iter_bar = tqdm(self.unsup_iter, total=self.cfg.total_steps, disable=True) if ssl_mode \
-              else tqdm(self.sup_iter, total=self.cfg.total_steps, disable=True)
+        iter_bar = tqdm(self.unsup_iter, total=self.cfg.total_steps, disable=self.cfg.hide_tqdm) if ssl_mode \
+              else tqdm(self.sup_iter, total=self.cfg.total_steps, disable=self.cfg.hide_tqdm)
 
         for i, batch in enumerate(iter_bar):
             # Device assignment
@@ -122,11 +122,12 @@ class Trainer(object):
             # print loss
             global_step += 1
             loss_sum += final_loss.item()
-            #if ssl_mode:
-            #    iter_bar.set_description('final=%5.3f unsup=%5.3f sup=%5.3f'\
-            #            % (final_loss.item(), unsup_loss.item(), sup_loss.item()))
-            #else:
-            #    iter_bar.set_description('loss=%5.3f' % (final_loss.item()))
+            if not self.cfg.hide_tqdm:
+                if ssl_mode:
+                    iter_bar.set_description('final=%5.3f unsup=%5.3f sup=%5.3f'\
+                            % (final_loss.item(), unsup_loss.item(), sup_loss.item()))
+                else:
+                    iter_bar.set_description('loss=%5.3f' % (final_loss.item()))
 
             # logging            
             if self.cfg.uda_mode:
