@@ -330,8 +330,37 @@ def main():
         else:
             sup_loss = torch.mean(sup_loss)
 
-        final_loss = sup_loss
-        return final_loss, sup_loss, sup_loss
+        # unsup loss
+        with torch.no_grad():
+            ori_logits = model(ori_input_ids, ori_segment_ids, ori_input_mask)
+            ori_prob   = F.softmax(ori_logits, dim=-1)    # KLdiv target
+
+        hidden = model(
+            input_ids=ori_input_ids, 
+            segment_ids=ori_segment_ids, 
+            input_mask=ori_input_mask,
+            output_h=True
+        )
+
+        # mixup
+        l = np.random.beta(cfg.alpha, cfg.alpha)
+        l = max(l, 1-l)
+        idx = torch.randperm(hidden.size(0))
+
+        h_a, h_b = hidden, hidden[idx]
+        mixed_h = l * h_a + (1 - l) * h_b
+
+        prob_a, prob_b = ori_prob, ori_prob[idx]
+        mixed_prob = l * prob_a + (1-l) * prob_b
+
+        # continue forward pass
+        logits = model(input_h=mixed_h)
+
+        probs_u = torch.softmax(logits, dim=1)
+        unsup_loss = torch.mean((probs_u - mixed_prob)**2)
+
+        final_loss = sup_loss + cfg.uda_coeff*unsup_loss
+        return final_loss, sup_loss, unsup_loss
 
 
 
