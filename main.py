@@ -347,7 +347,7 @@ def main():
         l = max(l, 1-l)
         idx = torch.randperm(hidden.size(0))
 
-        #c_ori_input_ids = ori_input_ids.clone()
+        c_ori_input_ids = ori_input_ids
         batch_size = ori_input_ids.size(0)
 
         if cfg.mixup == 'word':
