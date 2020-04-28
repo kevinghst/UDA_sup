@@ -205,7 +205,7 @@ class Classifier(nn.Module):
             pooled_h = self.activ(self.fc(h[:, 0])) # 맨앞의 [CLS]만 뽑아내기
 
             if mixup == 'cls':
-                mixed_pooled_h = mixup_op(pooled_h, l, shuffle_idx)
+                pooled_h = mixup_op(pooled_h, l, shuffle_idx)
 
             if output_h:
                 return pooled_h
