@@ -358,7 +358,7 @@ def main():
         mixed_prob = mixup_op(ori_prob, l, idx)
 
         # continue forward pass
-        logits = model(input_h=mixed_h)
+        logits = model(input_h=hidden)
 
         probs_u = torch.softmax(logits, dim=1)
         unsup_loss = torch.mean((probs_u - mixed_prob)**2)
