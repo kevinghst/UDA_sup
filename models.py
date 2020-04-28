@@ -25,7 +25,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from utils.utils import split_last, merge_last, mixup
+from utils.utils import split_last, merge_last, mixup_op
 
 
 class Config(NamedTuple):
@@ -77,12 +77,17 @@ class Embeddings(nn.Module):
         self.norm = LayerNorm(cfg)
         self.drop = nn.Dropout(cfg.p_drop_hidden)
 
-    def forward(self, x, seg):
+    def forward(self, x, seg, mixup, shuffle_idx, l):
         seq_len = x.size(1)
         pos = torch.arange(seq_len, dtype=torch.long, device=x.device)
         pos = pos.unsqueeze(0).expand_as(x) # (S,) -> (1, S) -> (B, S)  이렇게 외부에서 생성되는 값
 
-        e = self.tok_embed(x) + self.pos_embed(pos) + self.seg_embed(seg)
+        token_e = self.tok_embed(x)
+        pos_e = self.pos_embed(pos)
+        seg_e = self.seg_embed(seg)
+
+        e = token_e + pos_e + seg_e
+
         return self.drop(self.norm(e))
 
 
@@ -164,7 +169,7 @@ class Transformer(nn.Module):
             x=None, seg=None, mask=None,
             mixup=None, shuffle_idx=None, l=1
         ):
-        h = self.embed(x, seg)
+        h = self.embed(x, seg, mixup, shuffle_idx, l)
         for block in self.blocks:
             h = block(h, mask)
         return h
@@ -200,7 +205,7 @@ class Classifier(nn.Module):
             pooled_h = self.activ(self.fc(h[:, 0])) # 맨앞의 [CLS]만 뽑아내기
 
             if mixup == 'cls':
-                mixed_pooled_h = mixup(pooled_h, l, shuffle_idx)
+                mixed_pooled_h = mixup_op(pooled_h, l, shuffle_idx)
 
             if output_h:
                 return pooled_h

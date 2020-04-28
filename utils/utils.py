@@ -45,7 +45,7 @@ def multi_accuracy(output, target, topk=(1,)):
         res.append(correct_k.mul_(100.0 / batch_size))
     return res
 
-def mixup(input, l, idx):
+def mixup_op(input, l, idx):
     input_a, input_b = input, input[idx]
     mixed_input = l * input_a + (1 - l) * input_b
 

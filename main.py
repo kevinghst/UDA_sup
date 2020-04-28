@@ -21,7 +21,7 @@ import torch.nn.functional as F
 import models
 import train
 from load_data import load_data
-from utils.utils import set_seeds, get_device, _get_device, torch_device_one, mixup
+from utils.utils import set_seeds, get_device, _get_device, torch_device_one, mixup_op
 from utils import optim, configuration
 import numpy as np
 
@@ -355,7 +355,7 @@ def main():
             l=l
         )
 
-        mixed_prob = mixup(ori_prob, l, idx)
+        mixed_prob = mixup_op(ori_prob, l, idx)
 
         # continue forward pass
         logits = model(input_h=mixed_h)
