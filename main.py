@@ -331,7 +331,7 @@ def main():
             sup_loss = torch.mean(sup_loss)
 
         final_loss = sup_loss
-        return final_loss, sup_loss, 0
+        return final_loss, sup_loss, sup_loss
 
 
 
