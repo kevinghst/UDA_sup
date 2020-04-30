@@ -86,6 +86,11 @@ class Embeddings(nn.Module):
         pos_e = self.pos_embed(pos)
         seg_e = self.seg_embed(seg)
 
+        if mixup=='word':
+            c_token_e = self.tok_embed(c_input_ids)
+            embeds_a, embeds_b = token_e, c_token_e[shuffle_idx]
+            token_e = l * embeds_a + (1-l) * embeds_b
+
         e = token_e + pos_e + seg_e
 
         return self.drop(self.norm(e))
