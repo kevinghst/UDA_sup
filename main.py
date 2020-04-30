@@ -380,11 +380,11 @@ def main():
                     if i_count < j_count:
                         ori_input_mask[i] = ori_input_mask[j]
         
-        for i in range(0, batch_size):
-            new_mask = ori_input_mask[i]
-            new_ids = ori_input_ids[i]
-            old_ids = c_ori_input_ids[i]
-            pdb.set_trace()
+        #for i in range(0, batch_size):
+        #    new_mask = ori_input_mask[i]
+        #    new_ids = ori_input_ids[i]
+        #    old_ids = c_ori_input_ids[i]
+        #    pdb.set_trace()
 
         hidden = model(
             input_ids=ori_input_ids, 
