@@ -383,6 +383,7 @@ def main():
 
         hidden = model(
             input_ids=ori_input_ids, 
+            c_input_ids=c_ori_input_ids,
             segment_ids=ori_segment_ids, 
             input_mask=ori_input_mask,
             output_h=True,
