@@ -111,21 +111,6 @@ class DataSet():
             input_columns = ['ori_input_ids', 'ori_input_mask', 'ori_input_type_ids',
                              'aug_input_ids', 'aug_input_mask', 'aug_input_type_ids']
             tensors = [torch.tensor(data[c].apply(lambda x: ast.literal_eval(x)), dtype=torch.long) for c in input_columns]
-
-            ori_num_tokens = []
-            aug_num_tokens = []
-
-            for ori_inp in tensors[0]:
-                num = (ori_inp!=0).sum()
-                ori_num_tokens.append(num.item())
-
-            for aug_inp in tensors[3]:
-                num = (aug_inp!=0).sum()
-                aug_num_tokens.append(num.item())
-
-            tensors.append(torch.tensor(ori_num_tokens))
-            tensors.append(torch.tensor(aug_num_tokens))
-
         else:
             input_columns = ['input_ids', 'input_mask', 'input_type_ids', 'label']
             tensors = [torch.tensor(data[c].apply(lambda x: ast.literal_eval(x)), dtype=torch.long)    \
@@ -198,7 +183,7 @@ class DataSet():
         if 'input_ids' in df_dev:
             input_ids_dev, attention_masks_dev, seg_ids_dev, label_ids_dev, num_tokens_dev = self.retrieve_tensors(df_dev, 'sup')
             if self.cfg.uda_mode:
-                ori_input_ids, ori_input_mask, ori_seg_ids, aug_input_ids, aug_input_mask, aug_seg_ids, ori_num_tokens, aug_num_tokens = self.retrieve_tensors(df_unsup, 'unsup')
+                ori_input_ids, ori_input_mask, ori_seg_ids, aug_input_ids, aug_input_mask, aug_seg_ids = self.retrieve_tensors(df_unsup, 'unsup')
                 print('Number of unsup sentences: {:,}\n'.format(ori_input_ids.shape[0]))
         else:
             input_ids_dev, attention_masks_dev, seg_ids_dev, label_ids_dev, num_tokens_dev = self.preprocess(df_dev)
@@ -210,8 +195,6 @@ class DataSet():
 
         unsup_dataset = None
         if self.cfg.uda_mode:
-            unsup_dataset = TensorDataset(
-                ori_input_ids, ori_seg_ids, ori_input_mask, aug_input_ids, aug_seg_ids, aug_input_mask, ori_num_tokens, aug_num_tokens
-            )
+            unsup_dataset = TensorDataset(ori_input_ids, ori_seg_ids, ori_input_mask, aug_input_ids, aug_seg_ids, aug_input_mask)
 
         return train_dataset, val_dataset, unsup_dataset

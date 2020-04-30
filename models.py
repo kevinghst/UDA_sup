@@ -77,12 +77,7 @@ class Embeddings(nn.Module):
         self.norm = LayerNorm(cfg)
         self.drop = nn.Dropout(cfg.p_drop_hidden)
 
-    def forward(
-            self, 
-            x=None, 
-            seg=None, 
-            c_input_ids=None, mixup=None, shuffle_idx=None, l=1
-        ):
+    def forward(self, x, seg, mixup, shuffle_idx, l):
         seq_len = x.size(1)
         pos = torch.arange(seq_len, dtype=torch.long, device=x.device)
         pos = pos.unsqueeze(0).expand_as(x) # (S,) -> (1, S) -> (B, S)  이렇게 외부에서 생성되는 값
@@ -90,11 +85,6 @@ class Embeddings(nn.Module):
         token_e = self.tok_embed(x)
         pos_e = self.pos_embed(pos)
         seg_e = self.seg_embed(seg)
-
-        if mixup=='word':
-            c_token_e = self.tok_embed(c_input_ids)
-            embeds_a, embeds_b = token_e, c_token_e[shuffle_idx]
-            token_e = l * embeds_a + (1-l) * embeds_b
 
         e = token_e + pos_e + seg_e
 
@@ -177,12 +167,9 @@ class Transformer(nn.Module):
     def forward(
             self, 
             x=None, seg=None, mask=None,
-            c_input_ids=None, mixup=None, shuffle_idx=None, l=1,
+            mixup=None, shuffle_idx=None, l=1
         ):
-        h = self.embed(
-            x=x, seg=seg, 
-            c_input_ids=c_input_ids, mixup=mixup, shuffle_idx=shuffle_idx, l=l
-        )
+        h = self.embed(x, seg, mixup, shuffle_idx, l)
         for block in self.blocks:
             h = block(h, mask)
         return h
@@ -200,8 +187,7 @@ class Classifier(nn.Module):
 
     def forward(
             self,
-            input_ids=None,
-            c_input_ids=None,
+            input_ids=None, 
             segment_ids=None, 
             input_mask=None, 
             output_h=False, 
@@ -213,7 +199,7 @@ class Classifier(nn.Module):
         if input_h is None:
             h = self.transformer(
                 x=input_ids, seg=segment_ids, mask=input_mask, 
-                c_input_ids=c_input_ids, mixup=mixup, shuffle_idx=shuffle_idx, l=l
+                mixup=mixup, shuffle_idx=shuffle_idx, l=l
             )
             # only use the first h in the sequence
             pooled_h = self.activ(self.fc(h[:, 0])) # 맨앞의 [CLS]만 뽑아내기

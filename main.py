@@ -261,8 +261,7 @@ def main():
         # batch
         input_ids, segment_ids, input_mask, label_ids = sup_batch
         ori_input_ids, ori_segment_ids, ori_input_mask, \
-        aug_input_ids, aug_segment_ids, aug_input_mask, \
-        ori_num_tokens, aug_num_tokens = unsup_batch
+        aug_input_ids, aug_segment_ids, aug_input_mask = unsup_batch
 
 
         all_ids = torch.cat([input_ids, ori_input_ids, aug_input_ids], dim=0)
@@ -310,8 +309,7 @@ def main():
         # batch
         input_ids, segment_ids, input_mask, label_ids = sup_batch
         ori_input_ids, ori_segment_ids, ori_input_mask, \
-        aug_input_ids, aug_segment_ids, aug_input_mask, \
-        ori_num_tokens, aug_num_tokens = unsup_batch
+        aug_input_ids, aug_segment_ids, aug_input_mask = unsup_batch
 
         # sup loss
         sup_size = input_ids.size(0)
@@ -347,43 +345,9 @@ def main():
         l = max(l, 1-l)
         idx = torch.randperm(hidden.size(0))
 
-        c_ori_input_ids = ori_input_ids
-        batch_size = ori_input_ids.size(0)
-
-        if cfg.mixup == 'word':
-            for i in range(0, batch_size):
-                j = idx[i]
-                i_count = int(ori_num_tokens[i])
-                j_count = int(ori_num_tokens[j])
-
-                if i_count < j_count:
-                    small = i
-                    big = j
-                    small_count = i_count
-                    big_count = j_count
-                    small_ids = ori_input_ids
-                    big_ids = c_ori_input_ids
-                elif i_count > j_count:
-                    small = j
-                    big = i
-                    small_count = j_count
-                    big_count = i_count
-                    small_ids = c_ori_input_ids
-                    big_ids = ori_input_ids
-
-                if i_count != j_count:
-                    first = small_ids[small][0:small_count-1]
-                    second = torch.tensor([1] * (big_count - small_count))
-                    third = big_ids[big][big_count-1:128]
-                    combined = torch.cat((first, second, third), 0)
-                    small_ids[small] = combined
-                    if i_count < j_count:
-                        ori_input_mask[i] = ori_input_mask[j]
-
         hidden = model(
-            input_ids=ori_input_ids,
-            c_input_ids=c_ori_input_ids,
-            segment_ids=ori_segment_ids,
+            input_ids=ori_input_ids, 
+            segment_ids=ori_segment_ids, 
             input_mask=ori_input_mask,
             output_h=True,
             mixup=cfg.mixup,
@@ -407,8 +371,7 @@ def main():
         # batch
         input_ids, segment_ids, input_mask, og_label_ids = sup_batch
         ori_input_ids, ori_segment_ids, ori_input_mask, \
-        aug_input_ids, aug_segment_ids, aug_input_mask, \
-        ori_num_tokens, aug_num_tokens = unsup_batch
+        aug_input_ids, aug_segment_ids, aug_input_mask = unsup_batch
 
         # convert label ids to hot vectors
         sup_size = input_ids.size(0)
