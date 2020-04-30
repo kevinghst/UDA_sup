@@ -349,7 +349,7 @@ def main():
 
         c_ori_input_ids = ori_input_ids.clone()
         batch_size = ori_input_ids.size(0)
-
+        pdb.set_race()
         if cfg.mixup == 'word':
             for i in range(0, batch_size):
                 j = idx[i]
