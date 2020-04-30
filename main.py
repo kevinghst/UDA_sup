@@ -388,12 +388,12 @@ def main():
 
         hidden = model(
             input_ids=ori_input_ids, 
-            c_input_ids=None,
             segment_ids=ori_segment_ids, 
             input_mask=ori_input_mask,
             output_h=True,
             mixup=cfg.mixup,
             shuffle_idx=idx,
+            clone_ids=c_ori_input_ids,
             l=l
         )
 
