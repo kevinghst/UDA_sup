@@ -503,7 +503,7 @@ def main():
         # output_dump.logs(sentence, label_pred, label_id)    # output dump
 
         return accuracy, result
-
+    pdb.set_trace()
     if cfg.mode == 'train':
         trainer.train(get_loss, None, cfg.model_file, cfg.pretrain_file)
 
