@@ -350,7 +350,7 @@ def main():
         
         if cfg.mixup == 'word':
             ori_input_ids, c_ori_input_ids = pad_for_word_mixup(
-                ori_input_ids, ori_input_mask, ori_num_tokens
+                ori_input_ids, ori_input_mask, ori_num_tokens, idx
             )
         else:
             c_ori_input_ids = None

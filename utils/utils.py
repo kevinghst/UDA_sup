@@ -25,7 +25,7 @@ import logging
 import numpy as np
 import torch
 
-def pad_for_word_mixup(input_ids, input_mask, num_tokens):
+def pad_for_word_mixup(input_ids, input_mask, num_tokens, idx):
     batch_size = input_ids.size(0)
     c_input_ids = input_ids.clone()
 
