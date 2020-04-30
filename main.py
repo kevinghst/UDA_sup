@@ -261,7 +261,8 @@ def main():
         # batch
         input_ids, segment_ids, input_mask, label_ids = sup_batch
         ori_input_ids, ori_segment_ids, ori_input_mask, \
-        aug_input_ids, aug_segment_ids, aug_input_mask = unsup_batch
+        aug_input_ids, aug_segment_ids, aug_input_mask, \
+        ori_num_tokens, aug_num_tokens = unsup_batch= unsup_batch
 
 
         all_ids = torch.cat([input_ids, ori_input_ids, aug_input_ids], dim=0)
@@ -309,7 +310,8 @@ def main():
         # batch
         input_ids, segment_ids, input_mask, label_ids = sup_batch
         ori_input_ids, ori_segment_ids, ori_input_mask, \
-        aug_input_ids, aug_segment_ids, aug_input_mask = unsup_batch
+        aug_input_ids, aug_segment_ids, aug_input_mask, \
+        ori_num_tokens, aug_num_tokens = unsup_batch
 
         # sup loss
         sup_size = input_ids.size(0)
@@ -371,7 +373,8 @@ def main():
         # batch
         input_ids, segment_ids, input_mask, og_label_ids = sup_batch
         ori_input_ids, ori_segment_ids, ori_input_mask, \
-        aug_input_ids, aug_segment_ids, aug_input_mask = unsup_batch
+        aug_input_ids, aug_segment_ids, aug_input_mask, \
+        ori_num_tokens, aug_num_tokens = unsup_batch
 
         # convert label ids to hot vectors
         sup_size = input_ids.size(0)
