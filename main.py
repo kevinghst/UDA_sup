@@ -375,6 +375,7 @@ def main():
                     first = small_ids[small][0:small_count-1]
                     second = torch.tensor([1] * (big_count - small_count))
                     third = big_ids[big][big_count-1:128]
+                    pdb.set_trace()
                     combined = torch.cat((first, second, third), 0)
                     small_ids[small] = combined
                     if i_count < j_count:
