@@ -25,6 +25,42 @@ import logging
 import numpy as np
 import torch
 
+def pad_for_word_mixup(input_ids, input_mask, num_tokens):
+    batch_size = input_ids.size(0)
+    c_input_ids = input_ids.clone()
+
+    for i in range(0, batch_size):
+        j = idx[i]
+        i_count = int(num_tokens[i])
+        j_count = int(num_tokens[j])
+
+        if i_count < j_count:
+            small = i
+            big = j
+            small_count = i_count
+            big_count = j_count
+            small_ids = input_ids
+            big_ids = c_input_ids
+        elif i_count > j_count:
+            small = j
+            big = i
+            small_count = j_count
+            big_count = i_count
+            small_ids = c_input_ids
+            big_ids = input_ids
+
+        if i_count != j_count:
+            first = small_ids[small][0:small_count-1]
+            second = torch.tensor([1] * (big_count - small_count)).cuda()
+            third = big_ids[big][big_count-1:128]
+            combined = torch.cat((first, second, third), 0)
+            small_ids[small] = combined
+            if i_count < j_count:
+                input_mask[i] = input_mask[j]
+
+
+    return input_ids, c_input_ids
+
 def bin_accuracy(preds, labels):
     pred_flat = np.argmax(preds, axis=1).flatten()
     labels_flat = labels.flatten()

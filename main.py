@@ -21,7 +21,7 @@ import torch.nn.functional as F
 import models
 import train
 from load_data import load_data
-from utils.utils import set_seeds, get_device, _get_device, torch_device_one, mixup_op
+from utils.utils import set_seeds, get_device, _get_device, torch_device_one, mixup_op, pad_for_word_mixup
 from utils import optim, configuration
 import numpy as np
 
@@ -347,38 +347,14 @@ def main():
         l = max(l, 1-l)
         idx = torch.randperm(hidden.size(0))
 
-        c_ori_input_ids = ori_input_ids.clone()
-        batch_size = ori_input_ids.size(0)
         
         if cfg.mixup == 'word':
-            for i in range(0, batch_size):
-                j = idx[i]
-                i_count = int(ori_num_tokens[i])
-                j_count = int(ori_num_tokens[j])
+            ori_input_ids, c_ori_input_ids = pad_for_word_mixup(
+                ori_input_ids, ori_input_mask, ori_num_tokens
+            )
+        else:
+            c_ori_input_ids = None
 
-                if i_count < j_count:
-                    small = i
-                    big = j
-                    small_count = i_count
-                    big_count = j_count
-                    small_ids = ori_input_ids
-                    big_ids = c_ori_input_ids
-                elif i_count > j_count:
-                    small = j
-                    big = i
-                    small_count = j_count
-                    big_count = i_count
-                    small_ids = c_ori_input_ids
-                    big_ids = ori_input_ids
-
-                if i_count != j_count:
-                    first = small_ids[small][0:small_count-1]
-                    second = torch.tensor([1] * (big_count - small_count)).cuda()
-                    third = big_ids[big][big_count-1:128]
-                    combined = torch.cat((first, second, third), 0)
-                    small_ids[small] = combined
-                    if i_count < j_count:
-                        ori_input_mask[i] = ori_input_mask[j]
         
         #for i in range(0, batch_size):
         #    new_mask = ori_input_mask[i]
@@ -396,7 +372,6 @@ def main():
             clone_ids=c_ori_input_ids,
             l=l
         )
-
         mixed_prob = mixup_op(ori_prob, l, idx)
 
         # continue forward pass
