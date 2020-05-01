@@ -361,7 +361,7 @@ def main():
 
     def get_loss_ict(model, sup_batch, unsup_batch, global_step):
         # batch
-        input_ids, segment_ids, input_mask, og_label_ids, num_tokens = sup_batch
+        input_ids, segment_ids, input_mask, label_ids, num_tokens = sup_batch
         ori_input_ids, ori_segment_ids, ori_input_mask, \
         aug_input_ids, aug_segment_ids, aug_input_mask, \
         ori_num_tokens, aug_num_tokens = unsup_batch
