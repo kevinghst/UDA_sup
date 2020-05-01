@@ -33,7 +33,7 @@ parser = argparse.ArgumentParser(description='PyTorch UDA Training')
 
 parser.add_argument('--seed', default=42, type=int)
 parser.add_argument('--data_seed', default=42, type=int)
-parser.add_argument('--lr', default=0.00002, type=float)
+parser.add_argument('--lr', default=0.00004, type=float)
 parser.add_argument('--warmup', default=0.1, type=float)
 parser.add_argument('--do_lower_case', default=True, type=bool)
 parser.add_argument('--mode', default='train_eval', type=str)
@@ -58,7 +58,7 @@ parser.add_argument('--total_steps', default=10000, type=int)
 parser.add_argument('--check_after', default=4999, type=int)
 parser.add_argument('--early_stopping', default=10, type=int)
 parser.add_argument('--max_seq_length', default=128, type=int)
-parser.add_argument('--train_batch_size', default=8, type=int)
+parser.add_argument('--train_batch_size', default=16, type=int)
 parser.add_argument('--eval_batch_size', default=16, type=int)
 
 parser.add_argument('--no_sup_loss', action='store_true')
@@ -77,7 +77,7 @@ parser.add_argument('--alpha', default=1, type=float)
 parser.add_argument('--lambda_u', default=75, type=int)
 parser.add_argument('--T', default=0.5, type=float)
 parser.add_argument('--ema_decay', default=0.999, type=float)
-parser.add_argument('--mixup', default='cls', type=str)
+parser.add_argument('--mixup', choices=['cls', 'word'])
 
 parser.add_argument('--data_parallel', default=True, type=bool)
 parser.add_argument('--need_prepro', default=False, type=bool)
@@ -306,7 +306,7 @@ def main():
 
         return final_loss, sup_loss, unsup_loss
 
-    def get_loss_ict(model, sup_batch, unsup_batch, global_step):
+    def get_sup_loss(model, sup_batch, unsup_batch, global_step):
         # batch
         input_ids, segment_ids, input_mask, og_label_ids, num_tokens = sup_batch
         ori_input_ids, ori_segment_ids, ori_input_mask, \
@@ -323,7 +323,10 @@ def main():
         l = max(l, 1-l)
         idx = torch.randperm(input_ids.size(0))
 
-        input_ids, c_input_ids = pad_for_word_mixup(input_ids, input_mask, num_tokens, idx)
+        if cfg.mixup:
+            input_ids, c_input_ids = pad_for_word_mixup(input_ids, input_mask, num_tokens, idx)
+        else:
+            c_input_ids = None
 
         # sup loss
         sup_size = input_ids.size(0)
@@ -332,7 +335,7 @@ def main():
             segment_ids=segment_ids, 
             input_mask=input_mask,
             output_h=True,
-            mixup='word',
+            mixup=cfg.mixup,
             shuffle_idx=idx,
             clone_ids=c_input_ids,
             l=l
@@ -354,6 +357,35 @@ def main():
         else:
             sup_loss = torch.mean(sup_loss)
 
+        return sup_loss, sup_loss, sup_loss
+
+    def get_loss_ict(model, sup_batch, unsup_batch, global_step):
+        # batch
+        input_ids, segment_ids, input_mask, og_label_ids, num_tokens = sup_batch
+        ori_input_ids, ori_segment_ids, ori_input_mask, \
+        aug_input_ids, aug_segment_ids, aug_input_mask, \
+        ori_num_tokens, aug_num_tokens = unsup_batch
+
+        # sup loss
+        sup_size = input_ids.size(0)
+        hidden = model(
+            input_ids=input_ids, 
+            segment_ids=segment_ids, 
+            input_mask=input_mask,
+            output_h=True
+        )
+        logits = model(input_h=hidden)
+
+        sup_loss = sup_criterion(logits[:sup_size], label_ids)  # shape : train_batch_size
+        if cfg.tsa and cfg.tsa != "none":
+            tsa_thresh = get_tsa_thresh(cfg.tsa, global_step, cfg.total_steps, start=1./logits.shape[-1], end=1)
+            larger_than_threshold = torch.exp(-sup_loss) > tsa_thresh   # prob = exp(log_prob), prob > tsa_threshold
+            # larger_than_threshold = torch.sum(  F.softmax(pred[:sup_size]) * torch.eye(num_labels)[sup_label_ids]  , dim=-1) > tsa_threshold
+            loss_mask = torch.ones_like(label_ids, dtype=torch.float32) * (1 - larger_than_threshold.type(torch.float32))
+            sup_loss = torch.sum(sup_loss * loss_mask, dim=-1) / torch.max(torch.sum(loss_mask, dim=-1), torch_device_one())
+        else:
+            sup_loss = torch.mean(sup_loss)
+
         if cfg.no_unsup_loss:
             return sup_loss, sup_loss, sup_loss
 
@@ -363,10 +395,10 @@ def main():
             ori_prob   = F.softmax(ori_logits, dim=-1)    # KLdiv target
 
 
-        ## mixup
-        #l = np.random.beta(cfg.alpha, cfg.alpha)
-        #l = max(l, 1-l)
-        #idx = torch.randperm(hidden.size(0))
+        # mixup
+        l = np.random.beta(cfg.alpha, cfg.alpha)
+        l = max(l, 1-l)
+        idx = torch.randperm(hidden.size(0))
 
         
         if cfg.mixup == 'word':
@@ -507,7 +539,7 @@ def main():
         if cfg.mixmatch_mode:
             trainer.train(get_mixmatch_loss_short, get_acc, cfg.model_file, cfg.pretrain_file)
         elif cfg.uda_test_mode:
-            trainer.train(get_loss_mixup, get_acc, cfg.model_file, cfg.pretrain_file)
+            trainer.train(get_sup_loss, get_acc, cfg.model_file, cfg.pretrain_file)
         elif cfg.uda_test_mode_two:
             trainer.train(get_loss_ict, get_acc, cfg.model_file, cfg.pretrain_file)
         else:
