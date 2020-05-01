@@ -159,11 +159,17 @@ class Trainer(object):
                     no_improvement += 1
 
                 print("  Top 1 Accuracy: {0:.4f}".format(total_accuracy))
-                print("  Validation Loss: {0:.2f}".format(avg_val_loss))
-                print("  Train Loss: {0:.2f}".format(final_loss.item()))
+                print("  Validation Loss: {0:.4f}".format(avg_val_loss))
+                print("  Train Loss: {0:.4f}".format(final_loss.item()))
+                if ssl_mode:
+                    print("  Sup Loss: {0:.4f}".format(sup_loss.item()))
+                    print("  Unsup Loss: {0:.4f}".format(unsup_loss.item()))
                 print("  Learning rate: {0:.7f}".format(self.optimizer.get_lr()[0]))
 
-                print('Max Accuracy : %5.3f Best Val Loss :  %5.3f Best Train Loss :  %5.3f Max global_steps : %d Cur global_steps : %d' %(max_acc[0], max_acc[2], max_acc[3], max_acc[1], global_step), end='\n\n')
+                print(
+                    'Max Accuracy : %5.3f Best Val Loss : %5.3f Best Train Loss : %5.4f Max global_steps : %d Cur global_steps : %d' 
+                    %(max_acc[0], max_acc[2], max_acc[3], max_acc[1], global_step), end='\n\n'
+                )
                 
                 if no_improvement == self.cfg.early_stopping:
                     print("Early stopped")
