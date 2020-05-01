@@ -65,7 +65,9 @@ class Trainer(object):
 
         # tensorboardX logging
         if self.cfg.results_dir:
-            logger = SummaryWriter(log_dir=os.path.join('logs', self.cfg.results_dir))
+            dir = os.path.join('results', self.cfg.results_dir)
+            logger = SummaryWriter(log_dir=dir)
+            
 
         self.model.train()
         self.load(model_file, pretrain_file)    # between model_file and pretrain_file, only one model will be loaded
