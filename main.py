@@ -321,7 +321,7 @@ def main():
         # for mixup
         l = np.random.beta(cfg.alpha, cfg.alpha)
         l = max(l, 1-l)
-        idx = torch.randperm(hidden.size(0))
+        idx = torch.randperm(input_ids.size(0))
 
         input_ids, c_input_ids = pad_for_word_mixup(input_ids, input_mask, num_tokens, idx)
 
