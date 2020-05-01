@@ -65,7 +65,6 @@ class Trainer(object):
 
         # tensorboardX logging
         if self.cfg.results_dir:
-            pdb.set_trace()
             logger = SummaryWriter(log_dir=os.path.join(self.cfg.results_dir, 'logs'))
 
         self.model.train()
