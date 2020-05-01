@@ -332,8 +332,10 @@ def main():
             segment_ids=segment_ids, 
             input_mask=input_mask,
             output_h=True,
+            mixup='word',
+            shuffle_idx=idx,
             clone_ids=c_input_ids,
-            mixup='word'
+            l=l
         )
         logits = model(input_h=hidden)
 
