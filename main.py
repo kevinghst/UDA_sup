@@ -259,7 +259,7 @@ def main():
     # loss functions
     def get_label_guess_loss(model, sup_batch, unsup_batch, global_step):
         # batch
-        input_ids, segment_ids, input_mask, label_ids = sup_batch
+        input_ids, segment_ids, input_mask, label_ids, num_tokens = sup_batch
         ori_input_ids, ori_segment_ids, ori_input_mask, \
         aug_input_ids, aug_segment_ids, aug_input_mask, \
         ori_num_tokens, aug_num_tokens = unsup_batch= unsup_batch
@@ -308,10 +308,22 @@ def main():
 
     def get_loss_ict(model, sup_batch, unsup_batch, global_step):
         # batch
-        input_ids, segment_ids, input_mask, label_ids = sup_batch
+        input_ids, segment_ids, input_mask, og_label_ids, num_tokens = sup_batch
         ori_input_ids, ori_segment_ids, ori_input_mask, \
         aug_input_ids, aug_segment_ids, aug_input_mask, \
         ori_num_tokens, aug_num_tokens = unsup_batch
+
+        # convert label ids to hot vectors
+        sup_size = input_ids.size(0)
+        label_ids = torch.zeros(sup_size, 2).scatter_(1, og_label_ids.cpu().view(-1,1), 1)
+        label_ids = label_ids.cuda(non_blocking=True)
+
+        # for mixup
+        l = np.random.beta(cfg.alpha, cfg.alpha)
+        l = max(l, 1-l)
+        idx = torch.randperm(hidden.size(0))
+
+        input_ids, c_input_ids = pad_for_word_mixup(input_ids, input_mask, num_tokens, idx)
 
         # sup loss
         sup_size = input_ids.size(0)
@@ -319,16 +331,23 @@ def main():
             input_ids=input_ids, 
             segment_ids=segment_ids, 
             input_mask=input_mask,
-            output_h=True
+            output_h=True,
+            clone_ids=c_input_ids,
+            mixup='word'
         )
         logits = model(input_h=hidden)
 
-        sup_loss = sup_criterion(logits[:sup_size], label_ids)  # shape : train_batch_size
+        mixed_labels = mixup_op(label_ids, l, idx)
+
+
+        #sup_loss = sup_criterion(logits[:sup_size], label_ids)  # shape : train_batch_size
+        sup_loss = -torch.sum(F.log_softmax(logits, dim=1) * mixed_labels, dim=1)
+
         if cfg.tsa and cfg.tsa != "none":
             tsa_thresh = get_tsa_thresh(cfg.tsa, global_step, cfg.total_steps, start=1./logits.shape[-1], end=1)
             larger_than_threshold = torch.exp(-sup_loss) > tsa_thresh   # prob = exp(log_prob), prob > tsa_threshold
             # larger_than_threshold = torch.sum(  F.softmax(pred[:sup_size]) * torch.eye(num_labels)[sup_label_ids]  , dim=-1) > tsa_threshold
-            loss_mask = torch.ones_like(label_ids, dtype=torch.float32) * (1 - larger_than_threshold.type(torch.float32))
+            loss_mask = torch.ones_like(og_label_ids, dtype=torch.float32) * (1 - larger_than_threshold.type(torch.float32))
             sup_loss = torch.sum(sup_loss * loss_mask, dim=-1) / torch.max(torch.sum(loss_mask, dim=-1), torch_device_one())
         else:
             sup_loss = torch.mean(sup_loss)
@@ -342,10 +361,10 @@ def main():
             ori_prob   = F.softmax(ori_logits, dim=-1)    # KLdiv target
 
 
-        # mixup
-        l = np.random.beta(cfg.alpha, cfg.alpha)
-        l = max(l, 1-l)
-        idx = torch.randperm(hidden.size(0))
+        ## mixup
+        #l = np.random.beta(cfg.alpha, cfg.alpha)
+        #l = max(l, 1-l)
+        #idx = torch.randperm(hidden.size(0))
 
         
         if cfg.mixup == 'word':
@@ -386,7 +405,7 @@ def main():
 
     def get_loss_mixup(model, sup_batch, unsup_batch, global_step):
         # batch
-        input_ids, segment_ids, input_mask, og_label_ids = sup_batch
+        input_ids, segment_ids, input_mask, og_label_ids, num_tokens = sup_batch
         ori_input_ids, ori_segment_ids, ori_input_mask, \
         aug_input_ids, aug_segment_ids, aug_input_mask, \
         ori_num_tokens, aug_num_tokens = unsup_batch
