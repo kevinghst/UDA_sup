@@ -432,13 +432,15 @@ def main():
             clone_ids=c_ori_input_ids,
             l=l
         )
-        mixed_prob = mixup_op(ori_prob, l, idx)
+
+        if cfg.mixup:
+            ori_prob = mixup_op(ori_prob, l, idx)
 
         # continue forward pass
         logits = model(input_h=hidden)
 
         probs_u = torch.softmax(logits, dim=1)
-        unsup_loss = torch.mean((probs_u - mixed_prob)**2)
+        unsup_loss = torch.mean((probs_u - ori_prob)**2)
 
         final_loss = sup_loss + cfg.uda_coeff*unsup_loss
         return final_loss, sup_loss, unsup_loss
