@@ -323,7 +323,7 @@ def main():
         l = max(l, 1-l)
         idx = torch.randperm(input_ids.size(0))
 
-        if cfg.mixup:
+        if cfg.mixup == 'word':
             input_ids, c_input_ids = pad_for_word_mixup(input_ids, input_mask, num_tokens, idx)
         else:
             c_input_ids = None
@@ -342,11 +342,12 @@ def main():
         )
         logits = model(input_h=hidden)
 
-        mixed_labels = mixup_op(label_ids, l, idx)
+        if cfg.mixup:
+            label_ids = mixup_op(label_ids, l, idx)
 
 
         #sup_loss = sup_criterion(logits[:sup_size], label_ids)  # shape : train_batch_size
-        sup_loss = -torch.sum(F.log_softmax(logits, dim=1) * mixed_labels, dim=1)
+        sup_loss = -torch.sum(F.log_softmax(logits, dim=1) * label_ids, dim=1)
 
         if cfg.tsa and cfg.tsa != "none":
             tsa_thresh = get_tsa_thresh(cfg.tsa, global_step, cfg.total_steps, start=1./logits.shape[-1], end=1)
