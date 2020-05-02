@@ -304,10 +304,10 @@ class Trainer(object):
     
     def save(self, i):
         """ save model """
-        if not os.path.isdir(os.path.join(self.cfg.results_dir, 'save')):
-            os.makedirs(os.path.join(self.cfg.results_dir, 'save'))
+        if not os.path.isdir(os.path.join('results', self.cfg.results_dir, 'save')):
+            os.makedirs(os.path.join('results', self.cfg.results_dir, 'save'))
         torch.save(self.model.state_dict(),
-                        os.path.join(self.cfg.results_dir, 'save', 'model_steps_'+str(i)+'.pt'))
+                        os.path.join('results', self.cfg.results_dir, 'save', 'model_steps_'+str(i)+'.pt'))
 
     def repeat_dataloader(self, iterable):
         """ repeat dataloader """
