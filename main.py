@@ -21,7 +21,7 @@ import torch.nn.functional as F
 import models
 import train
 from load_data import load_data
-from utils.utils import set_seeds, get_device, _get_device, torch_device_one, mixup_op, pad_for_word_mixup
+from utils.utils import set_seeds, get_device, _get_device, torch_device_one, mixup_op, pad_for_word_mixup, sigmoid_rampup
 from utils import optim, configuration
 import numpy as np
 
@@ -78,6 +78,8 @@ parser.add_argument('--lambda_u', default=75, type=int)
 parser.add_argument('--T', default=0.5, type=float)
 parser.add_argument('--ema_decay', default=0.999, type=float)
 parser.add_argument('--mixup', choices=['cls', 'word'])
+parser.add_argument('--consistency_rampup_starts', default=0, type=int)
+parser.add_argument('--consistency_rampup_ends', default=0, type=int)
 
 parser.add_argument('--data_parallel', default=True, type=bool)
 parser.add_argument('--need_prepro', default=False, type=bool)
@@ -442,7 +444,8 @@ def main():
         probs_u = torch.softmax(logits, dim=1)
         unsup_loss = torch.mean((probs_u - ori_prob)**2)
 
-        final_loss = sup_loss + cfg.uda_coeff*unsup_loss
+        w = cfg.uda_coeff * sigmoid_rampup(global_step, cfg.consistency_rampup_ends - cfg.consistency_rampup_starts)
+        final_loss = sup_loss + w*unsup_loss
         return final_loss, sup_loss, unsup_loss
 
 

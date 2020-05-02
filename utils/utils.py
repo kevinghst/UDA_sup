@@ -25,6 +25,15 @@ import logging
 import numpy as np
 import torch
 
+def sigmoid_rampup(current, rampup_length):
+    if rampup_length == 0:
+        return 1.0
+    else:
+        current = np.clip(current, 0.0, rampup_length)
+        phase = 1.0 - current / rampup_length
+        return float(np.exp(-5.0 * phase * phase))
+
+
 def pad_for_word_mixup(input_ids, input_mask, num_tokens, idx):
     batch_size = input_ids.size(0)
     c_input_ids = input_ids.clone()
