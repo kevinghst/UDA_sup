@@ -135,7 +135,7 @@ class Trainer(object):
             if self.cfg.no_unsup_loss:
                 logger.add_scalars('data/scalar_group',
                     {'sup_loss': final_loss.item(),
-                     'lr': self.optmizer.get_lr()[0]
+                     'lr': self.optimizer.get_lr()[0]
                     }, global_step)
             else:
                 logger.add_scalars('data/scalar_group',
