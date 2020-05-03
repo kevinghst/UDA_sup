@@ -70,6 +70,11 @@ def pad_for_word_mixup(input_ids, input_mask, num_tokens, idx):
 
     return input_ids, c_input_ids
 
+def mixup_op(input, l, idx):
+    input_a, input_b = input, input[idx]
+    mixed_input = l * input_a + (1 - l) * input_b
+    return mixed_input
+
 def bin_accuracy(preds, labels):
     pred_flat = np.argmax(preds, axis=1).flatten()
     labels_flat = labels.flatten()
@@ -89,12 +94,6 @@ def multi_accuracy(output, target, topk=(1,)):
         correct_k = correct[:k].view(-1).float().sum(0)
         res.append(correct_k.mul_(100.0 / batch_size))
     return res
-
-def mixup_op(input, l, idx):
-    input_a, input_b = input, input[idx]
-    mixed_input = l * input_a + (1 - l) * input_b
-
-    return mixed_input
 
 def torch_device_one():
     return torch.tensor(1.).to(_get_device())
