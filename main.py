@@ -376,8 +376,8 @@ def main():
 
         # sup mixup
         sup_l = np.random.beta(cfg.alpha, cfg.alpha)
-        sup_l = max(l, 1-l)
-        sup_idx = torch.randperm(hidden.size(0))
+        sup_l = max(sup_l, 1-sup_l)
+        sup_idx = torch.randperm(sup_size)
 
         if cfg.sup_mixup == 'word':
             input_ids, c_input_ids = pad_for_word_mixup(
