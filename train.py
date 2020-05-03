@@ -132,17 +132,19 @@ class Trainer(object):
                     iter_bar.set_description('loss=%5.3f' % (final_loss.item()))
 
             # logging            
-            if self.cfg.uda_mode:
+            if self.cfg.no_unsup_loss:
                 logger.add_scalars('data/scalar_group',
-                                    {'final_loss': final_loss.item(),
-                                     'sup_loss': sup_loss.item(),
-                                     'unsup_loss': unsup_loss.item(),
-                                     'weighted_unsup_loss': weighted_unsup_loss.item(),
-                                     'lr': self.optimizer.get_lr()[0]
-                                    }, global_step)
+                    {'sup_loss': final_loss.item(),
+                     'lr': self.optmizer.get_lr()[0]
+                    }, global_step)
             else:
                 logger.add_scalars('data/scalar_group',
-                                    {'sup_loss': final_loss.item()}, global_step)
+                    {'final_loss': final_loss.item(),
+                        'sup_loss': sup_loss.item(),
+                        'unsup_loss': unsup_loss.item(),
+                        'weighted_unsup_loss': weighted_unsup_loss.item(),
+                        'lr': self.optimizer.get_lr()[0]
+                    }, global_step)
 
             if global_step % self.cfg.save_steps == 0:
                 self.save(global_step)
@@ -153,7 +155,10 @@ class Trainer(object):
                 else:
                     total_accuracy, avg_val_loss = self.validate()
 
-                logger.add_scalars('data/scalar_group', {'eval_acc' : total_accuracy}, global_step)
+                logger.add_scalars('data/scalar_group',
+                                  {'eval_acc' : total_accuracy,
+                                   'eval_loss': avg_val_loss
+                                  }, global_step)
                 if max_acc[0] < total_accuracy:
                     self.save(global_step)
                     max_acc = total_accuracy, global_step, avg_val_loss, final_loss.item()

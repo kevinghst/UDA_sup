@@ -51,7 +51,7 @@ parser.add_argument('--uda_mode', action='store_true')
 parser.add_argument('--mixmatch_mode', action='store_true')
 parser.add_argument('--uda_test_mode', action='store_true')
 parser.add_argument('--uda_test_mode_two', action='store_true')
-parser.add_argument('--sup_mixup', action='store_true')
+parser.add_argument('--sup_mixup',  choices=['cls', 'word'])
 parser.add_argument('--unsup_mixup', action='store_true')
 
 parser.add_argument('--total_steps', default=10000, type=int)
@@ -374,15 +374,34 @@ def main():
         label_ids = torch.zeros(sup_size, 2).scatter_(1, og_label_ids.cpu().view(-1,1), 1)
         label_ids = label_ids.cuda(non_blocking=True)
 
+        # sup mixup
+        sup_l = np.random.beta(cfg.alpha, cfg.alpha)
+        sup_l = max(l, 1-l)
+        sup_idx = torch.randperm(hidden.size(0))
+
+        if cfg.sup_mixup == 'word':
+            input_ids, c_input_ids = pad_for_word_mixup(
+                input_ids, input_mask, num_tokens, sup_idx    
+            )
+        else:
+            c_input_ids = None
+
+
         # sup loss
-        sup_size = input_ids.size(0)
         hidden = model(
             input_ids=input_ids, 
             segment_ids=segment_ids, 
             input_mask=input_mask,
-            output_h=True
+            output_h=True,
+            mixup=cfg.sup_mixup,
+            shuffle_idx=sup_idx,
+            clone_ids=c_input_ids,
+            l=sup_l
         )
         logits = model(input_h=hidden)
+
+        if cfg.sup_mixup:
+            label_ids = mixup_op(label_ids, sup_l, sup_idx)
 
         sup_loss = -torch.sum(F.log_softmax(logits, dim=1) * label_ids, dim=1)
 
@@ -434,12 +453,10 @@ def main():
             clone_ids=c_ori_input_ids,
             l=l
         )
+        logits = model(input_h=hidden)
 
         if cfg.mixup:
             ori_prob = mixup_op(ori_prob, l, idx)
-
-        # continue forward pass
-        logits = model(input_h=hidden)
 
         probs_u = torch.softmax(logits, dim=1)
         unsup_loss = torch.mean((probs_u - ori_prob)**2)
@@ -510,6 +527,7 @@ def main():
             sup_loss = torch.sum(sup_loss * loss_mask, dim=-1) / torch.max(torch.sum(loss_mask, dim=-1), torch_device_one())
         else:
             sup_loss = torch.mean(sup_loss)
+
 
         # unsup loss
         # ori

@@ -3,6 +3,6 @@
     "",
     "\\utils"
   ],
-  "SelectedNode": "\\run.sbatch",
+  "SelectedNode": "\\train.py",
   "PreviewInSolutionExplorer": false
 }
