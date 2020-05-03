@@ -22,6 +22,7 @@ from copy import deepcopy
 from typing import NamedTuple
 from tqdm import tqdm
 import time
+import shutil
 
 import torch
 import torch.nn as nn
@@ -66,6 +67,9 @@ class Trainer(object):
         # tensorboardX logging
         if self.cfg.results_dir:
             dir = os.path.join('results', self.cfg.results_dir)
+            if os.path.exists(dir) and os.path.isdir(dir):
+                shutil.rmtree(dir)
+
             logger = SummaryWriter(log_dir=dir)
             
 
