@@ -23,6 +23,7 @@ from typing import NamedTuple
 from tqdm import tqdm
 import time
 import shutil
+from logger import *
 
 import torch
 import torch.nn as nn
@@ -70,7 +71,14 @@ class Trainer(object):
             if os.path.exists(dir) and os.path.isdir(dir):
                 shutil.rmtree(dir)
 
-            logger = SummaryWriter(log_dir=dir)
+            writer = SummaryWriter(log_dir=dir)
+
+            #logger_path = dir + 'log.txt'
+            #logger = Logger(logger_path, title='uda')
+            #if self.cfg.no_unsup_loss:
+            #    logger.set_names(['Train Loss', 'Valid Acc', 'Valid Loss', 'LR'])
+            #else:
+            #    logger.set_names(['Train Loss', 'Train Loss X', 'Train Loss U', 'Train Loss W U', 'Valid Acc', 'Valid Loss', 'LR'])
             
 
         self.model.train()
@@ -137,12 +145,12 @@ class Trainer(object):
 
             # logging            
             if self.cfg.no_unsup_loss:
-                logger.add_scalars('data/scalar_group',
+                writer.add_scalars('data/training',
                     {'sup_loss': final_loss.item(),
                      'lr': self.optimizer.get_lr()[0]
                     }, global_step)
             else:
-                logger.add_scalars('data/scalar_group',
+                writer.add_scalars('data/training',
                     {'final_loss': final_loss.item(),
                         'sup_loss': sup_loss.item(),
                         'unsup_loss': unsup_loss.item(),
@@ -159,7 +167,7 @@ class Trainer(object):
                 else:
                     total_accuracy, avg_val_loss = self.validate()
 
-                logger.add_scalars('data/scalar_group',
+                writer.add_scalars('data/evaluation',
                                   {'eval_acc' : total_accuracy,
                                    'eval_loss': avg_val_loss
                                   }, global_step)
@@ -196,7 +204,6 @@ class Trainer(object):
                         results = self.eval(get_acc, None, ema_model)
                     else:
                         total_accuracy, avg_val_loss = self.validate()
-                    logger.add_scalars('data/scalar_group', {'eval_acc' : total_accuracy}, global_step)
                     if max_acc[0] < total_accuracy:
                         max_acc = total_accuracy, global_step, avg_val_loss, final_loss.item()             
                     print("  Top 1 Accuracy: {0:.4f}".format(total_accuracy))
@@ -205,7 +212,7 @@ class Trainer(object):
                     print('Max Accuracy : %5.3f Best Val Loss :  %5.3f Best Train Loss :  %5.3f Max global_steps : %d Cur global_steps : %d' %(max_acc[0], max_acc[2], max_acc[3], max_acc[1], global_step), end='\n\n')
                 self.save(global_step)
                 return
-        logger.close()
+        writer.close()
         return global_step
 
 
