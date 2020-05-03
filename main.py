@@ -446,7 +446,7 @@ def main():
 
         w = cfg.uda_coeff * sigmoid_rampup(global_step, cfg.consistency_rampup_ends - cfg.consistency_rampup_starts)
         final_loss = sup_loss + w*unsup_loss
-        return final_loss, sup_loss, unsup_loss
+        return final_loss, sup_loss, unsup_loss, w*unsup_loss
 
 
     def get_loss_mixup(model, sup_batch, unsup_batch, global_step):

@@ -108,7 +108,7 @@ class Trainer(object):
 
             # update
             self.optimizer.zero_grad()
-            final_loss, sup_loss, unsup_loss = get_loss(model, sup_batch, unsup_batch, global_step)
+            final_loss, sup_loss, unsup_loss, weighted_unsup_loss = get_loss(model, sup_batch, unsup_batch, global_step)
 
             if self.cfg.no_sup_loss:
                 final_loss = unsup_loss
@@ -137,6 +137,7 @@ class Trainer(object):
                                     {'final_loss': final_loss.item(),
                                      'sup_loss': sup_loss.item(),
                                      'unsup_loss': unsup_loss.item(),
+                                     'weighted_unsup_loss': weighted_unsup_loss.item(),
                                      'lr': self.optimizer.get_lr()[0]
                                     }, global_step)
             else:
