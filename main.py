@@ -385,8 +385,6 @@ def main():
             )
         else:
             c_input_ids = None
-        pdb.set_trace()
-
 
         # sup loss
         hidden = model(
