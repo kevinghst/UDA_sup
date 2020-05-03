@@ -145,18 +145,16 @@ class Trainer(object):
 
             # logging            
             if self.cfg.no_unsup_loss:
-                writer.add_scalars('data/training',
-                    {'sup_loss': final_loss.item(),
-                     'lr': self.optimizer.get_lr()[0]
-                    }, global_step)
+                writer.add_scalars('data/losses', {'sup_loss': final_loss.item()}, global_step)
+                writer.add_scalars('data/rates', {'lr': self.optimizer.get_lr()[0]}, global_step)
             else:
-                writer.add_scalars('data/training',
+                writer.add_scalars('data/losses',
                     {'final_loss': final_loss.item(),
                         'sup_loss': sup_loss.item(),
                         'unsup_loss': unsup_loss.item(),
-                        'weighted_unsup_loss': weighted_unsup_loss.item(),
-                        'lr': self.optimizer.get_lr()[0]
+                        'weighted_unsup_loss': weighted_unsup_loss.item()
                     }, global_step)
+                writer.add_scalars('data/rates', {'lr': self.optimizer.get_lr()[0]}, global_step)
 
             if global_step % self.cfg.save_steps == 0:
                 self.save(global_step)
@@ -167,10 +165,9 @@ class Trainer(object):
                 else:
                     total_accuracy, avg_val_loss = self.validate()
 
-                writer.add_scalars('data/evaluation',
-                                  {'eval_acc' : total_accuracy,
-                                   'eval_loss': avg_val_loss
-                                  }, global_step)
+                writer.add_scalars('data/accuracies', {'eval_acc' : total_accuracy}, global_step)
+                writer.add_scalars('data/losses', {'eval_loss': avg_val_loss}, global_step)
+
                 if max_acc[0] < total_accuracy:
                     self.save(global_step)
                     max_acc = total_accuracy, global_step, avg_val_loss, final_loss.item()
