@@ -87,7 +87,6 @@ class Embeddings(nn.Module):
         seg_e = self.seg_embed(seg)
 
         if mixup=='word':
-            pdb.set_trace()
             c_token_e = self.tok_embed(clone_ids)
             embeds_a, embeds_b = token_e, c_token_e[shuffle_idx]
             token_e = l * embeds_a + (1-l) * embeds_b
