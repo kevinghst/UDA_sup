@@ -154,6 +154,11 @@ class Trainer(object):
                         'unsup_loss': unsup_loss.item(),
                         'weighted_unsup_loss': weighted_unsup_loss.item()
                     }, global_step)
+                writer.add_scalars('data/unsup_losses',
+                    {
+                        'unsup_loss': unsup_loss.item(),
+                        'weighted_unsup_loss': weighted_unsup_loss.item()
+                    }, global_step)
                 writer.add_scalars('data/rates', {'lr': self.optimizer.get_lr()[0]}, global_step)
 
             if global_step % self.cfg.save_steps == 0:
