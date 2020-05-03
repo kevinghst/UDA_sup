@@ -396,7 +396,7 @@ def main():
             sup_loss = torch.mean(sup_loss)
 
         if cfg.no_unsup_loss:
-            return sup_loss, sup_loss, sup_loss
+            return sup_loss, sup_loss, sup_loss, sup_loss
 
         # unsup loss
         with torch.no_grad():
