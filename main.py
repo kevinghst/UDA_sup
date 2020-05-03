@@ -208,7 +208,7 @@ def main():
     # Create the DataLoaders for our training and validation sets.
     train_dataloader = DataLoader(
                 train_dataset,  # The training samples.
-                sampler = RandomSampler(train_dataset), # Select batches randomly
+                sampler = SequentialSampler(train_dataset), # Select batches randomly
                 batch_size = cfg.train_batch_size # Trains with this batch size.
             )
 
@@ -385,6 +385,7 @@ def main():
             )
         else:
             c_input_ids = None
+        pdb.set_trace()
 
 
         # sup loss
