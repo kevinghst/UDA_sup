@@ -205,6 +205,7 @@ class Trainer(object):
                     print('Max Accuracy : %5.3f Best Val Loss :  %5.3f Best Train Loss :  %5.3f Max global_steps : %d Cur global_steps : %d' %(max_acc[0], max_acc[2], max_acc[3], max_acc[1], global_step), end='\n\n')
                 self.save(global_step)
                 return
+        logger.close()
         return global_step
 
 
