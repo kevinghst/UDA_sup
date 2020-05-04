@@ -143,23 +143,16 @@ class Trainer(object):
                 else:
                     iter_bar.set_description('loss=%5.3f' % (final_loss.item()))
 
-            # logging            
+            # logging
             if self.cfg.no_unsup_loss:
-                writer.add_scalars('data/losses', {'sup_loss': final_loss.item()}, global_step)
-                writer.add_scalars('data/rates', {'lr': self.optimizer.get_lr()[0]}, global_step)
+                writer.add_scalars('data/train_loss', {'train_loss': final_loss.item()}, global_step)
+                writer.add_scalars('data/lr', {'lr': self.optimizer.get_lr()[0]}, global_step)
             else:
-                writer.add_scalars('data/losses',
-                    {'final_loss': final_loss.item(),
-                        'sup_loss': sup_loss.item(),
-                        'unsup_loss': unsup_loss.item(),
-                        'weighted_unsup_loss': weighted_unsup_loss.item()
-                    }, global_step)
-                writer.add_scalars('data/unsup_losses',
-                    {
-                        'unsup_loss': unsup_loss.item(),
-                        'weighted_unsup_loss': weighted_unsup_loss.item()
-                    }, global_step)
-                writer.add_scalars('data/rates', {'lr': self.optimizer.get_lr()[0]}, global_step)
+                writer.add_scalars('data/train_loss', {'train_loss': final_loss.item()}, global_step)
+                writer.add_scalars('data/sup_loss', {'sup_loss': sup_loss.item()}, global_step)
+                writer.add_scalars('data/unsup_loss', {'unsup_loss': unsup_loss.item()}, global_step)
+                writer.add_scalars('data/w_unsup_loss', {'w_unsup_loss': weighted_unsup_loss.item()}, global_step)
+                writer.add_scalars('data/lr', {'lr': self.optimizer.get_lr()[0]}, global_step)
 
             if global_step % self.cfg.save_steps == 0:
                 self.save(global_step)
@@ -170,8 +163,8 @@ class Trainer(object):
                 else:
                     total_accuracy, avg_val_loss = self.validate()
 
-                writer.add_scalars('data/accuracies', {'eval_acc' : total_accuracy}, global_step)
-                writer.add_scalars('data/losses', {'eval_loss': avg_val_loss}, global_step)
+                writer.add_scalars('data/eval_acc', {'eval_acc' : total_accuracy}, global_step)
+                writer.add_scalars('data/eval_loss', {'eval_loss': avg_val_loss}, global_step)
 
                 if max_acc[0] < total_accuracy:
                     self.save(global_step)
