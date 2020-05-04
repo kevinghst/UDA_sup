@@ -32,7 +32,7 @@ from torch.nn import CrossEntropyLoss
 from utils import checkpoint
 # from utils.logger import Logger
 from tensorboardX import SummaryWriter
-from utils.utils import output_logging, bin_accuracy, multi_accuracy
+from utils.utils import output_logging, bin_accuracy, multi_accuracy, AverageMeterSet
 import pdb
 
 
@@ -80,6 +80,7 @@ class Trainer(object):
             #else:
             #    logger.set_names(['Train Loss', 'Train Loss X', 'Train Loss U', 'Train Loss W U', 'Valid Acc', 'Valid Loss', 'LR'])
             
+        meters = AverageMeterSet()
 
         self.model.train()
         self.load(model_file, pretrain_file)    # between model_file and pretrain_file, only one model will be loaded
@@ -127,6 +128,12 @@ class Trainer(object):
             elif self.cfg.no_unsup_loss:
                 final_loss = sup_loss
 
+            meters.update('train_loss', final_loss.item())
+            meters.update('sup_loss', sup_loss.item())
+            meters.update('unsup_loss', unsup_loss.item())
+            meters.update('w_unsup_loss', weighted_unsup_loss.item())
+            meters.update('lr', self.optimizer.get_lr()[0])
+
             final_loss.backward()
             self.optimizer.step()
 
@@ -143,17 +150,6 @@ class Trainer(object):
                 else:
                     iter_bar.set_description('loss=%5.3f' % (final_loss.item()))
 
-            # logging
-            if self.cfg.no_unsup_loss:
-                writer.add_scalars('data/train_loss', {'train_loss': final_loss.item()}, global_step)
-                writer.add_scalars('data/lr', {'lr': self.optimizer.get_lr()[0]}, global_step)
-            else:
-                writer.add_scalars('data/train_loss', {'train_loss': final_loss.item()}, global_step)
-                writer.add_scalars('data/sup_loss', {'sup_loss': sup_loss.item()}, global_step)
-                writer.add_scalars('data/unsup_loss', {'unsup_loss': unsup_loss.item()}, global_step)
-                writer.add_scalars('data/w_unsup_loss', {'w_unsup_loss': weighted_unsup_loss.item()}, global_step)
-                writer.add_scalars('data/lr', {'lr': self.optimizer.get_lr()[0]}, global_step)
-
             if global_step % self.cfg.save_steps == 0:
                 self.save(global_step)
 
@@ -163,8 +159,21 @@ class Trainer(object):
                 else:
                     total_accuracy, avg_val_loss = self.validate()
 
+                # logging
                 writer.add_scalars('data/eval_acc', {'eval_acc' : total_accuracy}, global_step)
                 writer.add_scalars('data/eval_loss', {'eval_loss': avg_val_loss}, global_step)
+
+                if self.cfg.no_unsup_loss:
+                    writer.add_scalars('data/train_loss', {'train_loss': meters['train_loss'].avg}, global_step)
+                    writer.add_scalars('data/lr', {'lr': meters['lr'].avg}, global_step)
+                else:
+                    writer.add_scalars('data/train_loss', {'train_loss': meters['train_loss']}, global_step)
+                    writer.add_scalars('data/sup_loss', {'sup_loss': meters['sup_loss']}, global_step)
+                    writer.add_scalars('data/unsup_loss', {'unsup_loss': meters['unsup_loss']}, global_step)
+                    writer.add_scalars('data/w_unsup_loss', {'w_unsup_loss': meters['w_unsup_loss']}, global_step)
+                    writer.add_scalars('data/lr', {'lr': meters['lr'].avg}, global_step)
+
+                meters.reset()
 
                 if max_acc[0] < total_accuracy:
                     self.save(global_step)
