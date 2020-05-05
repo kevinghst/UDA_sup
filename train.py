@@ -167,10 +167,10 @@ class Trainer(object):
                     writer.add_scalars('data/train_loss', {'train_loss': meters['train_loss'].avg}, global_step)
                     writer.add_scalars('data/lr', {'lr': meters['lr'].avg}, global_step)
                 else:
-                    writer.add_scalars('data/train_loss', {'train_loss': meters['train_loss']}, global_step)
-                    writer.add_scalars('data/sup_loss', {'sup_loss': meters['sup_loss']}, global_step)
-                    writer.add_scalars('data/unsup_loss', {'unsup_loss': meters['unsup_loss']}, global_step)
-                    writer.add_scalars('data/w_unsup_loss', {'w_unsup_loss': meters['w_unsup_loss']}, global_step)
+                    writer.add_scalars('data/train_loss', {'train_loss': meters['train_loss'].avg}, global_step)
+                    writer.add_scalars('data/sup_loss', {'sup_loss': meters['sup_loss'].avg}, global_step)
+                    writer.add_scalars('data/unsup_loss', {'unsup_loss': meters['unsup_loss'].avg}, global_step)
+                    writer.add_scalars('data/w_unsup_loss', {'w_unsup_loss': meters['w_unsup_loss'].avg}, global_step)
                     writer.add_scalars('data/lr', {'lr': meters['lr'].avg}, global_step)
 
                 meters.reset()
