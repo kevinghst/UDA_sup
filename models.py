@@ -177,7 +177,14 @@ class Transformer(nn.Module):
         h = self.embed(x, seg, mixup, shuffle_idx, l, clone_ids)
         for block in self.blocks:
             h = block(h, mask)
-        return h
+
+        # only use the first h in the sequence
+        pooled_h = self.activ(self.fc(h[:, 0]))
+
+        if mixup == 'cls':
+            pooled_h = mixup_op(pooled_h, l, shuffle_idx)
+
+        return pooled_h
 
 
 class Classifier(nn.Module):
@@ -200,18 +207,14 @@ class Classifier(nn.Module):
             mixup=None,
             shuffle_idx=None,
             clone_ids=None,
-            l=1
+            l=1,
+            manifold_mixup=False,
         ):
         if input_h is None:
-            h = self.transformer(
+            pooled_h = self.transformer(
                 x=input_ids, seg=segment_ids, mask=input_mask, 
                 clone_ids=clone_ids, mixup=mixup, shuffle_idx=shuffle_idx, l=l
             )
-            # only use the first h in the sequence
-            pooled_h = self.activ(self.fc(h[:, 0])) # 맨앞의 [CLS]만 뽑아내기
-
-            if mixup == 'cls':
-                pooled_h = mixup_op(pooled_h, l, shuffle_idx)
 
             if output_h:
                 return pooled_h
@@ -219,23 +222,3 @@ class Classifier(nn.Module):
             pooled_h = input_h
         logits = self.classifier(self.drop(pooled_h))
         return logits
-
-
-class Opinion_extract(nn.Module):
-    """ Opinion_extraction """
-    def __init__(self, cfg, max_len, n_labels):
-        super().__init__()
-        self.transformer = Transformer(cfg)
-        self.fc = nn.Linear(cfg.dim, cfg.dim)
-        self.activ = nn.Tanh()
-        self.drop = nn.Dropout(cfg.p_drop_hidden)
-        self.extract = nn.Linear(cfg.dim, n_labels)
-        self.sigmoid = nn.Sigmoid()
-
-    def forward(self, input_ids, segment_ids, input_mask):
-        h = self.transformer(input_ids, segment_ids, input_mask)
-        # 전체 시퀀스 길이 만큼 뽑아내기
-        h = self.drop(self.activ(self.fc(h[:, 1:-1])))
-        seq_h = self.extract(h)
-        seq_h = seq_h.squeeze()
-        return self.sigmoid(seq_h)
