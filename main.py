@@ -331,6 +331,7 @@ def main():
         if cfg.sup_mixup == 'word' or cfg.sup_mixup == 'word_cls':
             if cfg.simple_pad:
                 simple_pad(input_ids, input_mask, num_tokens)
+                c_input_ids = None
             else:
                 input_ids, c_input_ids = pad_for_word_mixup(
                     input_ids, input_mask, num_tokens, sup_idx
