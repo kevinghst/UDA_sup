@@ -78,7 +78,7 @@ parser.add_argument('--T', default=0.5, type=float)
 parser.add_argument('--ema_decay', default=0.999, type=float)
 parser.add_argument('--sup_mixup',  choices=['cls', 'word'])
 parser.add_argument('--mixup', choices=['cls', 'word'])
-parser.add_argument('--manifold_mixup', store="true")
+parser.add_argument('--manifold_mixup', action='store_true')
 parser.add_argument('--consistency_rampup_starts', default=0, type=int)
 parser.add_argument('--consistency_rampup_ends', default=0, type=int)
 
