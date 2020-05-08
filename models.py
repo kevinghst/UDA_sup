@@ -180,15 +180,12 @@ class Transformer(nn.Module):
         layer = 1
         for block in self.blocks:
             h = block(h, mask)
-            #if mixup_layer == layer:
-            #    if mixup == 'cls':
-
-            #    elif mixup == 'word':
             
             if mixup_layer == layer:
                 if mixup == 'cls':
                     pdb.set_trace()
-
+                    h[:, 0] = mixup_op(h[:, 0], l, shuffle_idx)
+                    pdb.set_trace()
             layer += 1
         return h
 
