@@ -183,8 +183,11 @@ class Transformer(nn.Module):
             
             if mixup_layer == layer:
                 if mixup == 'cls':
-                    pdb.set_trace()
                     #h[:, 0] = mixup_op(h[:, 0], l, shuffle_idx)
+                    mixed_h = mixup_op(h[:, 0], l, shuffle_idx)
+                    pdb.set_trace()
+
+                elif mixup == 'word' or mixup == 'word_cls':
                     h = mixup_op(h, l, shuffle_idx)
             layer += 1
         return h
