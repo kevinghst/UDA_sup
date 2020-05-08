@@ -210,8 +210,12 @@ class Classifier(nn.Module):
             )
 
             # only use the first h in the sequence
-            pdb.set_trace()
+            # h shape = [16, 128, 768]
+            # h[h:, 0] = [16, 768]
+
             pooled_h = self.activ(self.fc(h[:, 0]))
+
+            # pooled_h = [16, 768]
 
             if mixup == 'cls':
                 pooled_h = mixup_op(pooled_h, l, shuffle_idx)
