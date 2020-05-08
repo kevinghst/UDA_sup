@@ -89,7 +89,6 @@ class Embeddings(nn.Module):
 
         if (mixup=='word' or mixup=='word_cls') and mixup_layer == 0:
             if simple_pad:
-                pdb.set_trace()
                 embeds_a, embeds_b = token_e, token_e[shuffle_idx]
             else:
                 c_token_e = self.tok_embed(clone_ids)
