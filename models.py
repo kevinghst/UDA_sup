@@ -183,9 +183,7 @@ class Transformer(nn.Module):
             
             if mixup_layer == layer:
                 if mixup == 'cls':
-                    pdb.set_trace()
                     h[:, 0] = mixup_op(h[:, 0], l, shuffle_idx)
-                    pdb.set_trace()
             layer += 1
         return h
 
@@ -241,6 +239,7 @@ class Classifier(nn.Module):
             # pooled_h = [16, 768]
 
             if mixup_layer == self.layers+1:
+                pdb.set_trace()
                 pooled_h = mixup_op(pooled_h, l, shuffle_idx)
 
             if output_h:
