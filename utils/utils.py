@@ -26,7 +26,6 @@ import numpy as np
 import torch
 
 
-
 def sigmoid_rampup(current, rampup_length):
     if rampup_length == 0:
         return 1.0

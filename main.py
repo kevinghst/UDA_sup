@@ -78,6 +78,7 @@ parser.add_argument('--T', default=0.5, type=float)
 parser.add_argument('--ema_decay', default=0.999, type=float)
 parser.add_argument('--sup_mixup',  choices=['cls', 'word', 'word_cls'])
 parser.add_argument('--mixup', choices=['cls', 'word', 'word_cls'])
+parser.add_argument('--simple_pad', action='store_true')
 parser.add_argument('--manifold_mixup', action='store_true')
 parser.add_argument('--consistency_rampup_starts', default=0, type=int)
 parser.add_argument('--consistency_rampup_ends', default=0, type=int)
@@ -328,9 +329,14 @@ def main():
         sup_idx = torch.randperm(sup_size)
 
         if cfg.sup_mixup == 'word' or cfg.sup_mixup == 'word_cls':
-            input_ids, c_input_ids = pad_for_word_mixup(
-                input_ids, input_mask, num_tokens, sup_idx    
-            )
+            if cfg.simple_pad:
+                input_ids, input_mask = simple_pad(input_ids, input_mask, num_tokens)
+            else:
+                pdb.set_trace()
+                input_ids, c_input_ids = pad_for_word_mixup(
+                    input_ids, input_mask, num_tokens, sup_idx
+                )
+                pdb.set_trace()
         else:
             c_input_ids = None
 
