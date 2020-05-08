@@ -78,7 +78,7 @@ class Embeddings(nn.Module):
         self.norm = LayerNorm(cfg)
         self.drop = nn.Dropout(cfg.p_drop_hidden)
 
-    def forward(self, x, seg, mixup, shuffle_idx, l, clone_ids, mixup_layer):
+    def forward(self, x, seg, mixup, shuffle_idx, l, clone_ids, mixup_layer, simple_pad):
         seq_len = x.size(1)
         pos = torch.arange(seq_len, dtype=torch.long, device=x.device)
         pos = pos.unsqueeze(0).expand_as(x) # (S,) -> (1, S) -> (B, S)  이렇게 외부에서 생성되는 값
@@ -88,8 +88,11 @@ class Embeddings(nn.Module):
         seg_e = self.seg_embed(seg)
 
         if (mixup=='word' or mixup=='word_cls') and mixup_layer == 0:
-            c_token_e = self.tok_embed(clone_ids)
-            embeds_a, embeds_b = token_e, c_token_e[shuffle_idx]
+            if simple_pad:
+                embeds_a, embeds_b = token_e, token_e[shuffle_idx]
+            else:
+                c_token_e = self.tok_embed(clone_ids)
+                embeds_a, embeds_b = token_e, c_token_e[shuffle_idx]
             token_e = l * embeds_a + (1-l) * embeds_b
 
         e = token_e + pos_e + seg_e
@@ -173,9 +176,12 @@ class Transformer(nn.Module):
     def forward(
             self, 
             x=None, seg=None, mask=None,
-            clone_ids=None, mixup=None, shuffle_idx=None, l=1, mixup_layer=-1
+            clone_ids=None, mixup=None, shuffle_idx=None, l=1, 
+            mixup_layer=-1, simple_pad=False
         ):
-        h = self.embed(x, seg, mixup, shuffle_idx, l, clone_ids, mixup_layer)
+        h = self.embed(
+            x, seg, mixup, shuffle_idx, l, clone_ids, mixup_layer, simple_pad
+        )
 
         layer = 1
         for block in self.blocks:
@@ -216,6 +222,7 @@ class Classifier(nn.Module):
             clone_ids=None,
             l=1,
             manifold_mixup=None,
+            simple_pad=False
         ):
         if input_h is None:
 
@@ -232,7 +239,7 @@ class Classifier(nn.Module):
             h = self.transformer(
                 x=input_ids, seg=segment_ids, mask=input_mask, 
                 clone_ids=clone_ids, mixup=mixup, shuffle_idx=shuffle_idx, l=l,
-                mixup_layer = mixup_layer
+                mixup_layer = mixup_layer, simple_pad=simple_pad
             )
 
             # only use the first h in the sequence
