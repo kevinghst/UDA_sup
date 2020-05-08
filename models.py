@@ -184,7 +184,8 @@ class Transformer(nn.Module):
             if mixup_layer == layer:
                 if mixup == 'cls':
                     pdb.set_trace()
-                    h[:, 0] = mixup_op(h[:, 0], l, shuffle_idx)
+                    #h[:, 0] = mixup_op(h[:, 0], l, shuffle_idx)
+                    h = mixup(h, l, shuffle_idx)
             layer += 1
         return h
 
