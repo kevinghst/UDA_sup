@@ -87,7 +87,7 @@ class Embeddings(nn.Module):
         pos_e = self.pos_embed(pos)
         seg_e = self.seg_embed(seg)
 
-        if mixup=='word' and mixup_layer == 0:
+        if (mixup=='word' or mixup=='word_cls') and mixup_layer == 0:
             c_token_e = self.tok_embed(clone_ids)
             embeds_a, embeds_b = token_e, c_token_e[shuffle_idx]
             token_e = l * embeds_a + (1-l) * embeds_b
@@ -184,6 +184,10 @@ class Transformer(nn.Module):
             #    if mixup == 'cls':
 
             #    elif mixup == 'word':
+            
+            if mixup_layer == layer:
+                if mixup == 'cls':
+                    pdb.set_trace()
 
             layer += 1
         return h
@@ -216,6 +220,8 @@ class Classifier(nn.Module):
         if input_h is None:
 
             if mixup == 'word':
+                mixup_layer = random.randint(0, self.layers) if manifold_mixup else 0
+            elif mixup == 'word_cls':
                 mixup_layer = random.randint(0, self.layers+1) if manifold_mixup else 0
             elif mixup == 'cls':
                 mixup_layer = random.randint(1, self.layers+1) if manifold_mixup else self.layers + 1
@@ -237,7 +243,7 @@ class Classifier(nn.Module):
 
             # pooled_h = [16, 768]
 
-            if mixup == 'cls' and mixup_layer == self.layers+1:
+            if mixup_layer == self.layers+1:
                 pooled_h = mixup_op(pooled_h, l, shuffle_idx)
 
             if output_h:
