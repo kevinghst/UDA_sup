@@ -207,8 +207,7 @@ class Classifier(nn.Module):
             mixup=None,
             shuffle_idx=None,
             clone_ids=None,
-            l=1,
-            manifold_mixup=None,
+            l=1
         ):
         if input_h is None:
             pooled_h = self.transformer(

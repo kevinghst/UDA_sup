@@ -343,8 +343,7 @@ def main():
             mixup=cfg.sup_mixup,
             shuffle_idx=sup_idx,
             clone_ids=c_input_ids,
-            l=sup_l,
-            manifold_mixup=cfg.manifold_mixup
+            l=sup_l
         )
         logits = model(input_h=hidden)
 
