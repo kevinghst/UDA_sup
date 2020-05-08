@@ -21,7 +21,7 @@ import torch.nn.functional as F
 import models
 import train
 from load_data import load_data
-from utils.utils import set_seeds, get_device, _get_device, torch_device_one, mixup_op, pad_for_word_mixup, sigmoid_rampup
+from utils.utils import set_seeds, get_device, _get_device, torch_device_one, mixup_op, pad_for_word_mixup, simple_pad, sigmoid_rampup
 from utils import optim, configuration
 import numpy as np
 
@@ -330,9 +330,8 @@ def main():
 
         if cfg.sup_mixup == 'word' or cfg.sup_mixup == 'word_cls':
             if cfg.simple_pad:
-                input_ids, input_mask = simple_pad(input_ids, input_mask, num_tokens)
+                simple_pad(input_ids, input_mask, num_tokens)
             else:
-                pdb.set_trace()
                 input_ids, c_input_ids = pad_for_word_mixup(
                     input_ids, input_mask, num_tokens, sup_idx
                 )
