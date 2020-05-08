@@ -210,6 +210,7 @@ class Classifier(nn.Module):
             )
 
             # only use the first h in the sequence
+            pdb.set_trace()
             pooled_h = self.activ(self.fc(h[:, 0]))
 
             if mixup == 'cls':
