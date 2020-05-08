@@ -184,7 +184,12 @@ class Transformer(nn.Module):
             if mixup_layer == layer:
                 if mixup == 'cls':
                     #h[:, 0] = mixup_op(h[:, 0], l, shuffle_idx)
-                    mixed_h = mixup_op(h[:, 0], l, shuffle_idx)
+                    pdb.set_trace()
+                    mixed_cls = mixup_op(h[:, 0], l, shuffle_idx).unsqueeze(1)
+                    h_rest = h[:, 1:]
+                    h = torch.cat([mixed_cls, h_rest], 1)
+
+
                     pdb.set_trace()
 
                 elif mixup == 'word' or mixup == 'word_cls':
