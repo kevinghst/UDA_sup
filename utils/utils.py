@@ -35,11 +35,12 @@ def sigmoid_rampup(current, rampup_length):
         return float(np.exp(-5.0 * phase * phase))
 
 
-def pad_
-
 def simple_pad(input_ids, input_mask, num_tokens):
-    max_count = int(max(num_tokens))
     batch_size = input_ids.size(0)
+
+    max_count, max_index = tensor.max(0)
+    max_count = int(max_count)
+    max_index = int(max_index)
 
     for i in range(0, batch_size):
         i_count = int(num_tokens[i])
@@ -47,7 +48,10 @@ def simple_pad(input_ids, input_mask, num_tokens):
         if i_count < max_count:
             first = input_ids[i][0:i_count-1]
             second = torch.tensor([1] * (max_count - i_count)).cuda()
-            third = torch.tensor([])
+            third = input_ids[max_index][max_count-1:128]
+            combined = torch.cat((first, second, third), 0)
+            input_ids[i] = combined
+            input_mask[i] = input_mask[max_index]
 
 def pad_for_word_mixup(input_ids, input_mask, num_tokens, idx):
     batch_size = input_ids.size(0)
