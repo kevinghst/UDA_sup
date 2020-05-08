@@ -251,7 +251,6 @@ class Classifier(nn.Module):
             # pooled_h = [16, 768]
 
             if mixup_layer == self.layers+1:
-                pdb.set_trace()
                 pooled_h = mixup_op(pooled_h, l, shuffle_idx)
 
             if output_h:
