@@ -19,6 +19,7 @@ import pdb
 import math
 import json
 from typing import NamedTuple
+import random
 
 import numpy as np
 import torch
@@ -77,7 +78,7 @@ class Embeddings(nn.Module):
         self.norm = LayerNorm(cfg)
         self.drop = nn.Dropout(cfg.p_drop_hidden)
 
-    def forward(self, x, seg, mixup, shuffle_idx, l, clone_ids):
+    def forward(self, x, seg, mixup, shuffle_idx, l, clone_ids, mixup_layer):
         seq_len = x.size(1)
         pos = torch.arange(seq_len, dtype=torch.long, device=x.device)
         pos = pos.unsqueeze(0).expand_as(x) # (S,) -> (1, S) -> (B, S)  이렇게 외부에서 생성되는 값
@@ -86,7 +87,7 @@ class Embeddings(nn.Module):
         pos_e = self.pos_embed(pos)
         seg_e = self.seg_embed(seg)
 
-        if mixup=='word':
+        if mixup=='word' and mixup_layer == 0:
             c_token_e = self.tok_embed(clone_ids)
             embeds_a, embeds_b = token_e, c_token_e[shuffle_idx]
             token_e = l * embeds_a + (1-l) * embeds_b
@@ -172,11 +173,19 @@ class Transformer(nn.Module):
     def forward(
             self, 
             x=None, seg=None, mask=None,
-            clone_ids=None, mixup=None, shuffle_idx=None, l=1
+            clone_ids=None, mixup=None, shuffle_idx=None, l=1, mixup_layer=-1
         ):
-        h = self.embed(x, seg, mixup, shuffle_idx, l, clone_ids)
+        h = self.embed(x, seg, mixup, shuffle_idx, l, clone_ids, mixup_layer)
+
+        layer = 1
         for block in self.blocks:
             h = block(h, mask)
+            #if mixup_layer == layer:
+            #    if mixup == 'cls':
+
+            #    elif mixup == 'word':
+
+            layer += 1
         return h
 
 
@@ -189,6 +198,7 @@ class Classifier(nn.Module):
         self.activ = nn.Tanh()
         self.drop = nn.Dropout(cfg.p_drop_hidden)
         self.classifier = nn.Linear(cfg.dim, n_labels)
+        self.layers = cfg.n_layers
 
     def forward(
             self,
@@ -204,9 +214,19 @@ class Classifier(nn.Module):
             manifold_mixup=None,
         ):
         if input_h is None:
+
+            if mixup == 'word':
+                mixup_layer = random.randint(0, self.layers+1) if manifold_mixup else 0
+            elif mixup == 'cls':
+                mixup_layer = random.randint(1, self.layers+1) if manifold_mixup else self.layers + 1
+            else:
+                mixup_layer = -1
+
+
             h = self.transformer(
                 x=input_ids, seg=segment_ids, mask=input_mask, 
-                clone_ids=clone_ids, mixup=mixup, shuffle_idx=shuffle_idx, l=l
+                clone_ids=clone_ids, mixup=mixup, shuffle_idx=shuffle_idx, l=l,
+                mixup_layer = mixup_layer
             )
 
             # only use the first h in the sequence
@@ -217,7 +237,7 @@ class Classifier(nn.Module):
 
             # pooled_h = [16, 768]
 
-            if mixup == 'cls':
+            if mixup == 'cls' and mixup_layer == self.layers+1:
                 pooled_h = mixup_op(pooled_h, l, shuffle_idx)
 
             if output_h:
