@@ -38,7 +38,7 @@ def sigmoid_rampup(current, rampup_length):
 def simple_pad(input_ids, input_mask, num_tokens):
     batch_size = input_ids.size(0)
 
-    max_count, max_index = tensor.max(0)
+    max_count, max_index = num_tokens.max(0)
     max_count = int(max_count)
     max_index = int(max_index)
 
