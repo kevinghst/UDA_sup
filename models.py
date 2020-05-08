@@ -177,14 +177,7 @@ class Transformer(nn.Module):
         h = self.embed(x, seg, mixup, shuffle_idx, l, clone_ids)
         for block in self.blocks:
             h = block(h, mask)
-
-        # only use the first h in the sequence
-        pooled_h = self.activ(self.fc(h[:, 0]))
-
-        if mixup == 'cls':
-            pooled_h = mixup_op(pooled_h, l, shuffle_idx)
-
-        return pooled_h
+        return h
 
 
 class Classifier(nn.Module):
@@ -207,13 +200,20 @@ class Classifier(nn.Module):
             mixup=None,
             shuffle_idx=None,
             clone_ids=None,
-            l=1
+            l=1,
+            manifold_mixup=None,
         ):
         if input_h is None:
-            pooled_h = self.transformer(
+            h = self.transformer(
                 x=input_ids, seg=segment_ids, mask=input_mask, 
                 clone_ids=clone_ids, mixup=mixup, shuffle_idx=shuffle_idx, l=l
             )
+
+            # only use the first h in the sequence
+            pooled_h = self.activ(self.fc(h[:, 0]))
+
+            if mixup == 'cls':
+                pooled_h = mixup_op(pooled_h, l, shuffle_idx)
 
             if output_h:
                 return pooled_h
