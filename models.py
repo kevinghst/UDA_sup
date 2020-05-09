@@ -87,7 +87,7 @@ class Embeddings(nn.Module):
         pos_e = self.pos_embed(pos)
         seg_e = self.seg_embed(seg)
 
-        if 'word' in mixup and mixup_layer == 0:
+        if mixup and 'word' in mixup and mixup_layer == 0:
             if simple_pad:
                 embeds_a, embeds_b = token_e, token_e[shuffle_idx]
             else:

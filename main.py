@@ -328,7 +328,7 @@ def main():
         sup_l = max(sup_l, 1-sup_l)
         sup_idx = torch.randperm(sup_size)
 
-        if 'word' in cfg.sup_mixup:
+        if cfg.sup_mixup and 'word' in cfg.sup_mixup:
             if cfg.simple_pad:
                 simple_pad(input_ids, input_mask, num_tokens)
                 c_input_ids = None
@@ -383,7 +383,7 @@ def main():
         idx = torch.randperm(hidden.size(0))
 
         
-        if 'word' in cfg.mixup:
+        if cfg.mixup and 'word' in cfg.mixup:
             ori_input_ids, c_ori_input_ids = pad_for_word_mixup(
                 ori_input_ids, ori_input_mask, ori_num_tokens, idx
             )
