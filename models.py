@@ -87,7 +87,7 @@ class Embeddings(nn.Module):
         pos_e = self.pos_embed(pos)
         seg_e = self.seg_embed(seg)
 
-        if (mixup=='word' or mixup=='word_cls') and mixup_layer == 0:
+        if 'word' in mixup and mixup_layer == 0:
             if simple_pad:
                 embeds_a, embeds_b = token_e, token_e[shuffle_idx]
             else:
@@ -232,6 +232,8 @@ class Classifier(nn.Module):
                 mixup_layer = random.randint(0, self.layers+1) if manifold_mixup else 0
             elif mixup == 'cls':
                 mixup_layer = random.randint(1, self.layers+1) if manifold_mixup else self.layers + 1
+            elif mixup == 'word_cls_only':
+                mixup_layer = random.choice([0, self.layers + 1])
             else:
                 mixup_layer = -1
 

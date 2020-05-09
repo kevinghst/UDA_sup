@@ -1,8 +1,9 @@
 {
   "ExpandedNodes": [
     "",
+    "\\config",
     "\\utils"
   ],
-  "SelectedNode": "\\dataset.py",
+  "SelectedNode": "\\main.py",
   "PreviewInSolutionExplorer": false
 }
