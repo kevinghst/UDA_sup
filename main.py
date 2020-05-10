@@ -80,6 +80,7 @@ parser.add_argument('--sup_mixup',  choices=['cls', 'word', 'word_cls', 'word_cl
 parser.add_argument('--mixup', choices=['cls', 'word', 'word_cls', 'word_cls_only'])
 parser.add_argument('--simple_pad', action='store_true')
 parser.add_argument('--manifold_mixup', action='store_true')
+parser.add_argument('--no_grad_clone', action='store_true')
 parser.add_argument('--consistency_rampup_starts', default=0, type=int)
 parser.add_argument('--consistency_rampup_ends', default=0, type=int)
 
@@ -350,7 +351,8 @@ def main():
             clone_ids=c_input_ids,
             l=sup_l,
             manifold_mixup=cfg.manifold_mixup,
-            simple_pad=cfg.simple_pad
+            simple_pad=cfg.simple_pad,
+            no_grad_clone=cfg.no_grad_clone
         )
         logits = model(input_h=hidden)
 

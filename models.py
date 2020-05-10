@@ -78,7 +78,9 @@ class Embeddings(nn.Module):
         self.norm = LayerNorm(cfg)
         self.drop = nn.Dropout(cfg.p_drop_hidden)
 
-    def forward(self, x, seg, mixup, shuffle_idx, l, clone_ids, mixup_layer, simple_pad):
+    def forward(
+        self, x, seg, mixup, shuffle_idx, l, clone_ids, mixup_layer, simple_pad, no_grad_clone
+        ):
         seq_len = x.size(1)
         pos = torch.arange(seq_len, dtype=torch.long, device=x.device)
         pos = pos.unsqueeze(0).expand_as(x) # (S,) -> (1, S) -> (B, S)  이렇게 외부에서 생성되는 값
@@ -87,17 +89,36 @@ class Embeddings(nn.Module):
         pos_e = self.pos_embed(pos)
         seg_e = self.seg_embed(seg)
 
-        if mixup and 'word' in mixup and mixup_layer == 0:
+        if mixup and 'word' in mixup:
             if simple_pad:
-                embeds_a, embeds_b = token_e, token_e[shuffle_idx]
+                if mixup_layer == 0:
+                    token_e = mixup_op(token_e, l, shuffle_idx)
             else:
-                c_token_e = self.tok_embed(clone_ids)
-                embeds_a, embeds_b = token_e, c_token_e[shuffle_idx]
-            token_e = l * embeds_a + (1-l) * embeds_b
+                if no_grad_clone:
+                    with torch.no_grad():
+                        c_token_e = self.tok_embed(clone_ids)
+                else:
+                    c_token_e = self.tok_embed(clone_ids)
+
+                if mixup_layer == 0:
+                    embeds_a, embeds_b = token_e, c_token_e[shuffle_idx]
+                    token_e = l * embeds_a + (1-l) * embeds_b
+                else:
+                    e = token_e + pos_e + seg_e
+                    ec = c_token_e + pos_e + seg_e
+
+                    h = self.drop(self.norm(e))
+
+                    if no_grad_clone:
+                        with torch.no_grad():
+                            hc = self.drop(self.norm(ec))
+                    else:
+                        hc = self.drop(self.norm(ec))
+
+                    return h, hc
 
         e = token_e + pos_e + seg_e
-
-        return self.drop(self.norm(e))
+        return self.drop(self.norm(e)), None
 
 
 class MultiHeadedSelfAttention(nn.Module):
@@ -177,24 +198,32 @@ class Transformer(nn.Module):
             self, 
             x=None, seg=None, mask=None,
             clone_ids=None, mixup=None, shuffle_idx=None, l=1, 
-            mixup_layer=-1, simple_pad=False
+            mixup_layer=-1, simple_pad=False, no_grad_clone=False
         ):
-        h = self.embed(
-            x, seg, mixup, shuffle_idx, l, clone_ids, mixup_layer, simple_pad
+        h, hc = self.embed(
+            x, seg, mixup, shuffle_idx, l, clone_ids, mixup_layer, simple_pad, no_grad_clone
         )
 
         layer = 1
         for block in self.blocks:
             h = block(h, mask)
             
-            if mixup_layer == layer:
-                if mixup == 'cls':
-                    mixed_cls = mixup_op(h[:, 0], l, shuffle_idx).unsqueeze(1)
-                    h_rest = h[:, 1:]
-                    h = torch.cat([mixed_cls, h_rest], 1)
+            if hc:
+                if no_grad_clone:
+                    with torch.no_grad():
+                        hc = block(hc, mask)
+                else:
+                    hc = block(hc, mask)
 
-                elif mixup == 'word' or mixup == 'word_cls':
+            if mixup_layer == layer and (mixup == 'word' or mixup == 'word_cls'):
+                if hc:
+                    h_a, h_b = h, hc[shuffle_idx]
+                    h = l * h_a + (1-l) * h_b
+                    hc = None
+                else:
                     h = mixup_op(h, l, shuffle_idx)
+
+
             layer += 1
         return h
 
@@ -222,7 +251,8 @@ class Classifier(nn.Module):
             clone_ids=None,
             l=1,
             manifold_mixup=None,
-            simple_pad=False
+            simple_pad=False,
+            no_grad_clone=False
         ):
         if input_h is None:
 
@@ -231,7 +261,7 @@ class Classifier(nn.Module):
             elif mixup == 'word_cls':
                 mixup_layer = random.randint(0, self.layers+1) if manifold_mixup else 0
             elif mixup == 'cls':
-                mixup_layer = random.randint(1, self.layers+1) if manifold_mixup else self.layers + 1
+                mixup_layer = self.layers + 1
             elif mixup == 'word_cls_only':
                 mixup_layer = random.choice([0, self.layers + 1])
             else:
@@ -241,7 +271,7 @@ class Classifier(nn.Module):
             h = self.transformer(
                 x=input_ids, seg=segment_ids, mask=input_mask, 
                 clone_ids=clone_ids, mixup=mixup, shuffle_idx=shuffle_idx, l=l,
-                mixup_layer = mixup_layer, simple_pad=simple_pad
+                mixup_layer = mixup_layer, simple_pad=simple_pad, no_grad_clone=no_grad_clone
             )
 
             # only use the first h in the sequence
