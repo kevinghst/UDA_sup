@@ -208,7 +208,7 @@ class Transformer(nn.Module):
         for block in self.blocks:
             h = block(h, mask)
             
-            if hc:
+            if hc is not None:
                 if no_grad_clone:
                     with torch.no_grad():
                         hc = block(hc, mask)
@@ -216,7 +216,7 @@ class Transformer(nn.Module):
                     hc = block(hc, mask)
 
             if mixup_layer == layer and (mixup == 'word' or mixup == 'word_cls'):
-                if hc:
+                if hc is not None:
                     h_a, h_b = h, hc[shuffle_idx]
                     h = l * h_a + (1-l) * h_b
                     hc = None
