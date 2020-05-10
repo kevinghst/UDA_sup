@@ -95,7 +95,6 @@ class Embeddings(nn.Module):
                     token_e = mixup_op(token_e, l, shuffle_idx)
             else:
                 if no_grad_clone:
-                    pdb.set_trace()
                     with torch.no_grad():
                         c_token_e = self.tok_embed(clone_ids)
                 else:
@@ -111,7 +110,6 @@ class Embeddings(nn.Module):
                     h = self.drop(self.norm(e))
 
                     if no_grad_clone:
-                        pdb.set_trace()
                         with torch.no_grad():
                             hc = self.drop(self.norm(ec))
                     else:
@@ -212,7 +210,6 @@ class Transformer(nn.Module):
             
             if hc is not None:
                 if no_grad_clone:
-                    pdb.set_trace()
                     with torch.no_grad():
                         hc = block(hc, mask)
                 else:
