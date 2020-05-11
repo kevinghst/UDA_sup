@@ -106,13 +106,17 @@ cfg, unknown = parser.parse_known_args()
 MAX_LENGTHS = {
     "SST": 128,
     "dbpedia": 256,
-    "imdb": 128
+    "imdb": 128,
+    "CoLA": 128,
+    "agnews": 256
 }
 
 NUM_LABELS = {
     "SST": 2,
     "dbpedia": 10,
-    "imdb": 2
+    "imdb": 2,
+    "CoLA": 2,
+    "agnews": 4
 }
 
 def linear_rampup(current, rampup_length):
