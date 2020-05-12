@@ -10,7 +10,7 @@ MAX_LENGTHS = {
     "SST": 128,
     "dbpedia": 256,
     "imdb": 128,
-    "CoLA": 128,
+    "cola": 128,
     "agnews": 256
 }
 
@@ -18,7 +18,7 @@ NUM_LABELS = {
     "SST": 2,
     "dbpedia": 10,
     "imdb": 2,
-    "CoLA": 2,
+    "cola": 2,
     "agnews": 4
 }
 
@@ -188,7 +188,7 @@ class DataSet():
                 self.reindex(df_unsup)
             else:
                 df_dev = pd.read_csv("./imdb/sup_dev.csv", header=None, names=['sentence', 'label'])
-        elif self.cfg.task == 'CoLA':
+        elif self.cfg.task == 'cola':
             df_train = pd.read_csv("./CoLA/train.tsv", delimiter='\t', header=None, names=['title', 'label', 'star', 'sentence']).iloc[1:]
             df_dev = pd.read_csv("./CoLA/dev.tsv", delimiter='\t', header=None, names=['title', 'label', 'star', 'sentence']).iloc[1:]
 
@@ -222,5 +222,5 @@ class DataSet():
         unsup_dataset = None
         if self.cfg.uda_mode:
             unsup_dataset = TensorDataset(ori_input_ids, ori_seg_ids, ori_input_mask, aug_input_ids, aug_seg_ids, aug_input_mask, ori_num_tokens, aug_num_tokens)
-
+        
         return train_dataset, val_dataset, unsup_dataset

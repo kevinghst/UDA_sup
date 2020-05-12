@@ -51,7 +51,8 @@ class Trainer(object):
             self.sup_iter = data_iter[0]
         elif len(data_iter) == 2:
             self.sup_iter = self.repeat_dataloader(data_iter[0])
-            self.unsup_iter = self.repeat_dataloader(data_iter[1])
+            self.unsup_iter = None
+            self.eval_iter = data_iter[1]
         elif len(data_iter) == 3:
             self.sup_iter = self.repeat_dataloader(data_iter[0])
             self.unsup_iter = self.repeat_dataloader(data_iter[1])

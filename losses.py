@@ -162,6 +162,56 @@ def mixmatch_loss_no_mixup(model, sup_batch, unsup_batch, global_step):
 
     return final_loss, sup_loss, unsup_loss
 
+def get_label_guess_loss(model, sup_batch, unsup_batch, global_step):
+    # batch
+    input_ids, segment_ids, input_mask, label_ids, num_tokens = sup_batch
+    ori_input_ids, ori_segment_ids, ori_input_mask, \
+    aug_input_ids, aug_segment_ids, aug_input_mask, \
+    ori_num_tokens, aug_num_tokens = unsup_batch= unsup_batch
+
+
+    all_ids = torch.cat([input_ids, ori_input_ids, aug_input_ids], dim=0)
+    all_mask = torch.cat([input_mask, ori_input_mask, aug_input_mask], dim=0)
+    all_seg = torch.cat([segment_ids, ori_segment_ids, aug_segment_ids], dim=0)
+
+    all_logits = model(all_ids, all_seg, all_mask)
+            
+    #sup loss
+    sup_size = label_ids.shape[0]
+    sup_loss = sup_criterion(all_logits[:sup_size], label_ids)
+    if cfg.tsa and cfg.tsa != "none":
+        tsa_thresh = get_tsa_thresh(cfg.tsa, global_step, cfg.total_steps, start=1./all_logits.shape[-1], end=1)
+        larger_than_threshold = torch.exp(-sup_loss) > tsa_thresh   # prob = exp(log_prob), prob > tsa_threshold
+        # larger_than_threshold = torch.sum(  F.softmax(pred[:sup_size]) * torch.eye(num_labels)[sup_label_ids]  , dim=-1) > tsa_threshold
+        loss_mask = torch.ones_like(label_ids, dtype=torch.float32) * (1 - larger_than_threshold.type(torch.float32))
+        sup_loss = torch.sum(sup_loss * loss_mask, dim=-1) / torch.max(torch.sum(loss_mask, dim=-1), torch_device_one())
+    else:
+        sup_loss = torch.mean(sup_loss)
+
+    #unsup loss
+    with torch.no_grad():
+        outputs_u = model(ori_input_ids, ori_segment_ids, ori_input_mask)
+        outputs_u2 = model(aug_input_ids, aug_segment_ids, aug_input_mask)
+        p = (torch.softmax(outputs_u, dim=1) + torch.softmax(outputs_u2, dim=1)) / 2
+        pt = p**(1/cfg.uda_softmax_temp)
+        targets_u = pt / pt.sum(dim=1, keepdim=True)
+        targets_u = targets_u.detach()
+
+    targets_u = torch.cat([targets_u, targets_u], dim=0)
+
+    # l2
+    #probs_u = torch.softmax(all_logits[sup_size:], dim=1)
+    #unsup_loss = torch.mean((probs_u - targets_u)**2)
+
+    # kl
+    aug_log_prob = F.log_softmax(all_logits[sup_size:], dim=-1)
+    unsup_loss = torch.mean(torch.sum(unsup_criterion(aug_log_prob, targets_u), dim=-1))
+
+    final_loss = sup_loss + cfg.uda_coeff*unsup_loss
+
+    return final_loss, sup_loss, unsup_loss
+
+
 def get_sup_loss(model, sup_batch, unsup_batch, global_step):
     # batch
     input_ids, segment_ids, input_mask, og_label_ids, num_tokens = sup_batch

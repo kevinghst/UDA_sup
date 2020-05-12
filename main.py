@@ -107,7 +107,7 @@ MAX_LENGTHS = {
     "SST": 128,
     "dbpedia": 256,
     "imdb": 128,
-    "CoLA": 128,
+    "cola": 128,
     "agnews": 256
 }
 
@@ -115,7 +115,7 @@ NUM_LABELS = {
     "SST": 2,
     "dbpedia": 10,
     "imdb": 2,
-    "CoLA": 2,
+    "cola": 2,
     "agnews": 4
 }
 
@@ -174,25 +174,6 @@ def get_tsa_thresh(schedule, global_step, num_train_steps, start, end):
     output = threshold * (end - start) + start
     return output.to(_get_device())
 
-def interleave_offsets(batch, nu):
-    groups = [batch // (nu + 1)] * (nu + 1)
-    for x in range(batch - sum(groups)):
-        groups[-x - 1] += 1
-    offsets = [0]
-    for g in groups:
-        offsets.append(offsets[-1] + g)
-    assert offsets[-1] == batch
-    return offsets
-
-
-def interleave(xy, batch):
-    nu = len(xy) - 1
-    offsets = interleave_offsets(batch, nu)
-    xy = [[v[offsets[p]:offsets[p + 1]] for p in range(nu + 1)] for v in xy]
-    for i in range(1, nu + 1):
-        xy[0][i], xy[i][i] = xy[i][i], xy[0][i]
-    return [torch.cat(v, dim=0) for v in xy]
-
 
 def main():
     # Load Configuration
@@ -236,7 +217,7 @@ def main():
     if cfg.uda_mode or cfg.mixmatch_mode:
         data_iter = [train_dataloader, unsup_dataloader, validation_dataloader] 
     else:
-        data_iter = [train_dataloader]
+        data_iter = [train_dataloader, validation_dataloader]
 
     ema_optimizer = None
     ema_model = None
@@ -266,54 +247,62 @@ def main():
     trainer = train.Trainer(cfg, model, data_iter, optimizer, get_device(), ema_model, ema_optimizer)
 
     # loss functions
-    def get_label_guess_loss(model, sup_batch, unsup_batch, global_step):
+    def get_sup_loss(model, sup_batch, global_step):
         # batch
-        input_ids, segment_ids, input_mask, label_ids, num_tokens = sup_batch
-        ori_input_ids, ori_segment_ids, ori_input_mask, \
-        aug_input_ids, aug_segment_ids, aug_input_mask, \
-        ori_num_tokens, aug_num_tokens = unsup_batch= unsup_batch
+        input_ids, segment_ids, input_mask, og_label_ids, num_tokens = sup_batch
 
+        # convert label ids to hot vectors
+        sup_size = input_ids.size(0)
+        label_ids = torch.zeros(sup_size, 2).scatter_(1, og_label_ids.cpu().view(-1,1), 1)
+        label_ids = label_ids.cuda(non_blocking=True)
 
-        all_ids = torch.cat([input_ids, ori_input_ids, aug_input_ids], dim=0)
-        all_mask = torch.cat([input_mask, ori_input_mask, aug_input_mask], dim=0)
-        all_seg = torch.cat([segment_ids, ori_segment_ids, aug_segment_ids], dim=0)
+        # sup mixup
+        sup_l = np.random.beta(cfg.alpha, cfg.alpha)
+        sup_l = max(sup_l, 1-sup_l)
+        sup_idx = torch.randperm(sup_size)
 
-        all_logits = model(all_ids, all_seg, all_mask)
-            
-        #sup loss
-        sup_size = label_ids.shape[0]
-        sup_loss = sup_criterion(all_logits[:sup_size], label_ids)
+        if cfg.sup_mixup and 'word' in cfg.sup_mixup:
+            if cfg.simple_pad:
+                simple_pad(input_ids, input_mask, num_tokens)
+                c_input_ids = None
+            else:
+                input_ids, c_input_ids = pad_for_word_mixup(
+                    input_ids, input_mask, num_tokens, sup_idx
+                )
+        else:
+            c_input_ids = None
+
+        # sup loss
+        hidden = model(
+            input_ids=input_ids, 
+            segment_ids=segment_ids, 
+            input_mask=input_mask,
+            output_h=True,
+            mixup=cfg.sup_mixup,
+            shuffle_idx=sup_idx,
+            clone_ids=c_input_ids,
+            l=sup_l,
+            manifold_mixup=cfg.manifold_mixup,
+            simple_pad=cfg.simple_pad,
+            no_grad_clone=cfg.no_grad_clone
+        )
+        logits = model(input_h=hidden)
+
+        if cfg.sup_mixup:
+            label_ids = mixup_op(label_ids, sup_l, sup_idx)
+
+        sup_loss = -torch.sum(F.log_softmax(logits, dim=1) * label_ids, dim=1)
+
         if cfg.tsa and cfg.tsa != "none":
-            tsa_thresh = get_tsa_thresh(cfg.tsa, global_step, cfg.total_steps, start=1./all_logits.shape[-1], end=1)
+            tsa_thresh = get_tsa_thresh(cfg.tsa, global_step, cfg.total_steps, start=1./logits.shape[-1], end=1)
             larger_than_threshold = torch.exp(-sup_loss) > tsa_thresh   # prob = exp(log_prob), prob > tsa_threshold
             # larger_than_threshold = torch.sum(  F.softmax(pred[:sup_size]) * torch.eye(num_labels)[sup_label_ids]  , dim=-1) > tsa_threshold
-            loss_mask = torch.ones_like(label_ids, dtype=torch.float32) * (1 - larger_than_threshold.type(torch.float32))
+            loss_mask = torch.ones_like(og_label_ids, dtype=torch.float32) * (1 - larger_than_threshold.type(torch.float32))
             sup_loss = torch.sum(sup_loss * loss_mask, dim=-1) / torch.max(torch.sum(loss_mask, dim=-1), torch_device_one())
         else:
             sup_loss = torch.mean(sup_loss)
 
-        #unsup loss
-        with torch.no_grad():
-            outputs_u = model(ori_input_ids, ori_segment_ids, ori_input_mask)
-            outputs_u2 = model(aug_input_ids, aug_segment_ids, aug_input_mask)
-            p = (torch.softmax(outputs_u, dim=1) + torch.softmax(outputs_u2, dim=1)) / 2
-            pt = p**(1/cfg.uda_softmax_temp)
-            targets_u = pt / pt.sum(dim=1, keepdim=True)
-            targets_u = targets_u.detach()
-
-        targets_u = torch.cat([targets_u, targets_u], dim=0)
-
-        # l2
-        #probs_u = torch.softmax(all_logits[sup_size:], dim=1)
-        #unsup_loss = torch.mean((probs_u - targets_u)**2)
-
-        # kl
-        aug_log_prob = F.log_softmax(all_logits[sup_size:], dim=-1)
-        unsup_loss = torch.mean(torch.sum(unsup_criterion(aug_log_prob, targets_u), dim=-1))
-
-        final_loss = sup_loss + cfg.uda_coeff*unsup_loss
-
-        return final_loss, sup_loss, unsup_loss
+        return sup_loss, sup_loss, sup_loss, sup_loss
 
 
     def get_loss_ict(model, sup_batch, unsup_batch, global_step):
@@ -452,7 +441,7 @@ def main():
         elif cfg.uda_test_mode_two:
             trainer.train(get_loss_ict, get_acc, cfg.model_file, cfg.pretrain_file)
         else:
-            trainer.train(get_loss_test, get_acc, cfg.model_file, cfg.pretrain_file)
+            trainer.train(get_sup_loss, get_acc, cfg.model_file, cfg.pretrain_file)
 
     if cfg.mode == 'eval':
         results = trainer.eval(get_acc, cfg.model_file, None)
