@@ -7,7 +7,7 @@ import ast
 import pdb
 
 MAX_LENGTHS = {
-    "SST": 128,
+    "sst": 128,
     "dbpedia": 256,
     "imdb": 128,
     "cola": 128,
@@ -15,7 +15,7 @@ MAX_LENGTHS = {
 }
 
 NUM_LABELS = {
-    "SST": 2,
+    "sst": 2,
     "dbpedia": 10,
     "imdb": 2,
     "cola": 2,
@@ -158,8 +158,8 @@ class DataSet():
     def get_dataset(self):
         # Load the dataset into a pandas dataframe.
         df_unsup = None
-
-        if self.cfg.task == "SST":
+        pdb.set_trace()
+        if self.cfg.task == "sst":
             df_train = pd.read_csv("./SST-2/train.tsv", delimiter='\t', header=None, names=['sentence', 'label']).iloc[1:]
             df_dev = pd.read_csv("./SST-2/dev.tsv", delimiter='\t', header=None, names=['sentence', 'label']).iloc[1:]
              

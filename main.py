@@ -104,7 +104,7 @@ cfg, unknown = parser.parse_known_args()
 
 
 MAX_LENGTHS = {
-    "SST": 128,
+    "sst": 128,
     "dbpedia": 256,
     "imdb": 128,
     "cola": 128,
@@ -112,7 +112,7 @@ MAX_LENGTHS = {
 }
 
 NUM_LABELS = {
-    "SST": 2,
+    "sst": 2,
     "dbpedia": 10,
     "imdb": 2,
     "cola": 2,
