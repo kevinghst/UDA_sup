@@ -158,7 +158,7 @@ class DataSet():
     def get_dataset(self):
         # Load the dataset into a pandas dataframe.
         df_unsup = None
-        pdb.set_trace()
+
         if self.cfg.task == "sst":
             df_train = pd.read_csv("./SST-2/train.tsv", delimiter='\t', header=None, names=['sentence', 'label']).iloc[1:]
             df_dev = pd.read_csv("./SST-2/dev.tsv", delimiter='\t', header=None, names=['sentence', 'label']).iloc[1:]
