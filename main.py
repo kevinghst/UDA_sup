@@ -135,31 +135,6 @@ class SemiLoss(object):
 
         return Lx, Lu, lambda_u * linear_rampup(current_step, total_steps)
 
-class WeightEMA(object):
-    def __init__(self, cfg, model, ema_model, alpha=0.999):
-        self.model = model
-        self.ema_model = ema_model
-        self.alpha = alpha
-        self.cfg = cfg
-
-        params = list(model.state_dict().values())
-        ema_params = list(ema_model.state_dict().values())
-
-        self.params = list(map(lambda x: x.float(), params))
-        self.ema_params = list(map(lambda x: x.float(), ema_params))
-        self.wd = 0.02 * self.cfg.lr
-
-        for param, ema_param in zip(self.params, self.ema_params):
-            param.data.copy_(ema_param.data)
-
-    def step(self):
-        one_minus_alpha = 1.0 - self.alpha
-        for param, ema_param in zip(self.params, self.ema_params):
-            ema_param.mul_(self.alpha)
-            ema_param.add_(param * one_minus_alpha)
-            # customized weight decay
-            param.mul_(1 - self.wd)
-
 # TSA
 def get_tsa_thresh(schedule, global_step, num_train_steps, start, end):
     training_progress = torch.tensor(float(global_step) / float(num_train_steps))

@@ -1,8 +1,9 @@
 {
   "ExpandedNodes": [
     "",
+    "\\mock",
     "\\utils"
   ],
-  "SelectedNode": "\\main.py",
+  "SelectedNode": "\\mock\\ten.py",
   "PreviewInSolutionExplorer": false
 }
