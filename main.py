@@ -223,6 +223,7 @@ def main():
 
     # loss functions
     def get_sup_loss(model, sup_batch, unsup_batch, global_step):
+        pdb.set_trace()
         # batch
         input_ids, segment_ids, input_mask, og_label_ids, num_tokens = sup_batch
 
