@@ -222,7 +222,7 @@ def main():
     trainer = train.Trainer(cfg, model, data_iter, optimizer, get_device(), ema_model, ema_optimizer)
 
     # loss functions
-    def get_sup_loss(model, sup_batch, global_step):
+    def get_sup_loss(model, sup_batch, unsup_batch, global_step):
         # batch
         input_ids, segment_ids, input_mask, og_label_ids, num_tokens = sup_batch
 
