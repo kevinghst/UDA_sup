@@ -332,10 +332,7 @@ class BertModel(BertPreTrainedModel):
 
         if mixup_layer == self.layers + 1:
             cls_a, cls_b = pooled_output, pooled_output[shuffle_idx]
-            pdb.set_trace()
             pooled_output = l * cls_a + (1-l) * cls_b
-
-        pdb.set_trace()
 
         outputs = (sequence_output, pooled_output,) + encoder_outputs[
             1:
@@ -399,7 +396,6 @@ class BertForSequenceClassificationCustom(BertPreTrainedModel):
             )
 
             pooled_output = outputs[1]
-            pdb.set_trace()
             if output_h:
                 return pooled_output
         else:
