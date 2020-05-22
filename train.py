@@ -84,7 +84,10 @@ class Trainer(object):
         meters = AverageMeterSet()
 
         self.model.train()
-        self.load(model_file, pretrain_file)    # between model_file and pretrain_file, only one model will be loaded
+
+        if cfg.model == "custom":
+            self.load(model_file, pretrain_file)    # between model_file and pretrain_file, only one model will be loaded
+
         model = self.model.to(self.device)
         ema_model = self.ema_model.to(self.device) if self.ema_model else None
 

@@ -211,7 +211,6 @@ def main():
         )
 
 
-
     if cfg.uda_mode:
         if cfg.unsup_criterion == 'KL':
             unsup_criterion = nn.KLDivLoss(reduction='none')
