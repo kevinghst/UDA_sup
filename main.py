@@ -367,7 +367,13 @@ def main():
 
         # unsup loss
         with torch.no_grad():
-            ori_logits = model(ori_input_ids, ori_segment_ids, ori_input_mask)
+            if cfg.model == "bert":
+                ori_logits = model(
+                    input_ids = ori_input_ids,
+                    attention_mask = ori_input_mask
+                )
+            else:
+                ori_logits = model(ori_input_ids, ori_segment_ids, ori_input_mask)
             ori_prob   = F.softmax(ori_logits, dim=-1)    # KLdiv target
 
 
@@ -390,21 +396,31 @@ def main():
         #    new_ids = ori_input_ids[i]
         #    old_ids = c_ori_input_ids[i]
         #    pdb.set_trace()
-
-        hidden = model(
-            input_ids=ori_input_ids, 
-            segment_ids=ori_segment_ids, 
-            input_mask=ori_input_mask,
-            output_h=True,
-            mixup=cfg.mixup,
-            shuffle_idx=idx,
-            clone_ids=c_ori_input_ids,
-            l=l,
-            manifold_mixup=cfg.manifold_mixup,
-            simple_pad=cfg.simple_pad,
-            no_grad_clone=cfg.no_grad_clone
-        )
-        logits = model(input_h=hidden)
+        if cfg.model == "bert":
+            logits = model(
+                input_ids=ori_input_ids,
+                clone_ids=c_ori_input_ids,
+                attention_mask=ori_input_mask,
+                mixup=cfg.mixup,
+                shuffle_idx=idx,
+                l=l,
+                manifold_mixup = cfg.manifold_mixup
+            )
+        else:
+            hidden = model(
+                input_ids=ori_input_ids, 
+                segment_ids=ori_segment_ids, 
+                input_mask=ori_input_mask,
+                output_h=True,
+                mixup=cfg.mixup,
+                shuffle_idx=idx,
+                clone_ids=c_ori_input_ids,
+                l=l,
+                manifold_mixup=cfg.manifold_mixup,
+                simple_pad=cfg.simple_pad,
+                no_grad_clone=cfg.no_grad_clone
+            )
+            logits = model(input_h=hidden)
 
         if cfg.mixup:
             ori_prob = mixup_op(ori_prob, l, idx)

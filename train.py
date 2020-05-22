@@ -272,12 +272,18 @@ class Trainer(object):
             b_input_ids, b_input_mask, b_segment_ids, b_labels = batch
             batch_size = b_input_ids.size(0)
 
-            with torch.no_grad():        
-                logits = model(
-                    b_input_ids,
-                    b_segment_ids,
-                    b_input_mask
-                )
+            with torch.no_grad():     
+                if cfg.model == "bert":
+                    logits = model(
+                        input_ids = b_input_ids,
+                        attention_mask = b_input_mask
+                    )
+                else:
+                    logits = model(
+                        b_input_ids,
+                        b_segment_ids,
+                        b_input_mask
+                    )
                     
                 loss_fct = CrossEntropyLoss()
                 loss = loss_fct(logits, b_labels)
