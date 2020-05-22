@@ -19,6 +19,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 import models
+from models_bert import BertForSequenceClassificationCustom
+
 import train
 from load_data import load_data
 from utils.utils import set_seeds, get_device, _get_device, torch_device_one, mixup_op, pad_for_word_mixup, simple_pad, sigmoid_rampup
@@ -39,6 +41,7 @@ parser.add_argument('--do_lower_case', default=True, type=bool)
 parser.add_argument('--mode', default='train_eval', type=str)
 parser.add_argument('--model_cfg', default='config/bert_base.json', type=str)
 parser.add_argument('--hide_tqdm', action='store_true')
+parser.add_argument('--model', default='custom', type=str)
 
 #Dataset
 parser.add_argument('--task', default="imdb", type=str)
@@ -196,7 +199,17 @@ def main():
 
     ema_optimizer = None
     ema_model = None
-    model = models.Classifier(model_cfg, NUM_LABELS[cfg.task])
+
+    if cfg.model == "custom":
+        model = models.Classifier(model_cfg, NUM_LABELS[cfg.task])
+    elif cfg.model == "bert":
+        model = BertForSequenceClassificationCustom.from_pretrained(
+            "bert-base-uncased", # Use the 12-layer BERT model, with an uncased vocab.
+            num_labels = NUM_LABELS[cfg.task],
+            output_attentions = False, # Whether the model returns attentions weights.
+            output_hidden_states = False, # Whether the model returns all hidden-states.
+        )
+
 
 
     if cfg.uda_mode:
@@ -309,20 +322,31 @@ def main():
             c_input_ids = None
 
         # sup loss
-        hidden = model(
-            input_ids=input_ids, 
-            segment_ids=segment_ids, 
-            input_mask=input_mask,
-            output_h=True,
-            mixup=cfg.sup_mixup,
-            shuffle_idx=sup_idx,
-            clone_ids=c_input_ids,
-            l=sup_l,
-            manifold_mixup=cfg.manifold_mixup,
-            simple_pad=cfg.simple_pad,
-            no_grad_clone=cfg.no_grad_clone
-        )
-        logits = model(input_h=hidden)
+        if cfg.model == "bert":
+            logits = model(
+                input_ids=input_ids,
+                clone_ids=c_input_ids,
+                attention_mask=input_mask,
+                mixup=cfg.sup_mixup,
+                shuffle_idx=sup_idx,
+                l=sup_l,
+                manifold_mixup = cfg.manifold_mixup
+            )
+        else:
+            hidden = model(
+                input_ids=input_ids, 
+                segment_ids=segment_ids, 
+                input_mask=input_mask,
+                output_h=True,
+                mixup=cfg.sup_mixup,
+                shuffle_idx=sup_idx,
+                clone_ids=c_input_ids,
+                l=sup_l,
+                manifold_mixup=cfg.manifold_mixup,
+                simple_pad=cfg.simple_pad,
+                no_grad_clone=cfg.no_grad_clone
+            )
+            logits = model(input_h=hidden)
 
         if cfg.sup_mixup:
             label_ids = mixup_op(label_ids, sup_l, sup_idx)
