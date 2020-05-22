@@ -324,7 +324,7 @@ def main():
         if cfg.model == "bert":
             logits = model(
                 input_ids=input_ids,
-                clone_ids=c_input_ids,
+                c_input_ids=c_input_ids,
                 attention_mask=input_mask,
                 mixup=cfg.sup_mixup,
                 shuffle_idx=sup_idx,
@@ -398,7 +398,7 @@ def main():
         if cfg.model == "bert":
             logits = model(
                 input_ids=ori_input_ids,
-                clone_ids=c_ori_input_ids,
+                c_input_ids=c_ori_input_ids,
                 attention_mask=ori_input_mask,
                 mixup=cfg.mixup,
                 shuffle_idx=idx,
