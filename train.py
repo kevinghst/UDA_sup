@@ -85,7 +85,7 @@ class Trainer(object):
 
         self.model.train()
 
-        if cfg.model == "custom":
+        if self.cfg.model == "custom":
             self.load(model_file, pretrain_file)    # between model_file and pretrain_file, only one model will be loaded
 
         model = self.model.to(self.device)
