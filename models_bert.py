@@ -327,6 +327,7 @@ class BertModel(BertPreTrainedModel):
             shuffle_idx=shuffle_idx,
             mixup=mixup
         )
+        pdb.set_trace()
         sequence_output = encoder_outputs[0]
         pooled_output = self.pooler(sequence_output)
 

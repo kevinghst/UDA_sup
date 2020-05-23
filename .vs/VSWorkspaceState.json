@@ -1,9 +1,8 @@
 {
   "ExpandedNodes": [
     "",
-    "\\mock",
     "\\utils"
   ],
-  "SelectedNode": "\\main.py",
+  "SelectedNode": "\\utils\\optim.py",
   "PreviewInSolutionExplorer": false
 }
