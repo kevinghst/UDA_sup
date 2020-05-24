@@ -75,8 +75,6 @@ class Embeddings(nn.Module):
         self.pos_embed = nn.Embedding(cfg.max_len, cfg.dim) # (preload)
         self.seg_embed = nn.Embedding(cfg.n_segments, cfg.dim) # (preload)
 
-        pdb.set_trace()
-
         self.norm = LayerNorm(cfg) # (preload)
         self.drop = nn.Dropout(cfg.p_drop_hidden)
 
