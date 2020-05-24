@@ -328,6 +328,7 @@ class BertModel(BertPreTrainedModel):
             mixup=mixup
         )
         sequence_output = encoder_outputs[0]
+        pbb.set_trace()
         pooled_output = self.pooler(sequence_output)
 
         if mixup_layer == self.layers + 1:
