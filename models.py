@@ -56,8 +56,8 @@ class LayerNorm(nn.Module):
     "A layernorm module in the TF style (epsilon inside the square root)."
     def __init__(self, cfg, variance_epsilon=1e-12):
         super().__init__()
-        self.gamma = nn.Parameter(torch.ones(cfg.dim))
-        self.beta  = nn.Parameter(torch.zeros(cfg.dim))
+        self.gamma = nn.Parameter(torch.ones(cfg.dim)) # (preload)
+        self.beta  = nn.Parameter(torch.zeros(cfg.dim)) # (preload)
         self.variance_epsilon = variance_epsilon
 
     def forward(self, x):
@@ -71,11 +71,13 @@ class Embeddings(nn.Module):
     "The embedding module from word, position and token_type embeddings."
     def __init__(self, cfg):
         super().__init__()
-        self.tok_embed = nn.Embedding(cfg.vocab_size, cfg.dim) # token embedding
-        self.pos_embed = nn.Embedding(cfg.max_len, cfg.dim) # position embedding
-        self.seg_embed = nn.Embedding(cfg.n_segments, cfg.dim) # segment(token type) embedding
+        self.tok_embed = nn.Embedding(cfg.vocab_size, cfg.dim) # (preload)
+        self.pos_embed = nn.Embedding(cfg.max_len, cfg.dim) # (preload)
+        self.seg_embed = nn.Embedding(cfg.n_segments, cfg.dim) # (preload)
 
-        self.norm = LayerNorm(cfg)
+        pdb.set_trace()
+
+        self.norm = LayerNorm(cfg) # (preload)
         self.drop = nn.Dropout(cfg.p_drop_hidden)
 
     def forward(
@@ -125,9 +127,9 @@ class MultiHeadedSelfAttention(nn.Module):
     """ Multi-Headed Dot Product Attention """
     def __init__(self, cfg):
         super().__init__()
-        self.proj_q = nn.Linear(cfg.dim, cfg.dim)
-        self.proj_k = nn.Linear(cfg.dim, cfg.dim)
-        self.proj_v = nn.Linear(cfg.dim, cfg.dim)
+        self.proj_q = nn.Linear(cfg.dim, cfg.dim) #(preload)
+        self.proj_k = nn.Linear(cfg.dim, cfg.dim) #(preload)
+        self.proj_v = nn.Linear(cfg.dim, cfg.dim) #(preload)
         self.drop = nn.Dropout(cfg.p_drop_attn)
         self.scores = None # for visualization
         self.n_heads = cfg.n_heads
@@ -160,8 +162,8 @@ class PositionWiseFeedForward(nn.Module):
     """ FeedForward Neural Networks for each position """
     def __init__(self, cfg):
         super().__init__()
-        self.fc1 = nn.Linear(cfg.dim, cfg.dim_ff)
-        self.fc2 = nn.Linear(cfg.dim_ff, cfg.dim)
+        self.fc1 = nn.Linear(cfg.dim, cfg.dim_ff) #(preload)
+        self.fc2 = nn.Linear(cfg.dim_ff, cfg.dim) #(preload)
         #self.activ = lambda x: activ_fn(cfg.activ_fn, x)
 
     def forward(self, x):
@@ -174,10 +176,10 @@ class Block(nn.Module):
     def __init__(self, cfg):
         super().__init__()
         self.attn = MultiHeadedSelfAttention(cfg)
-        self.proj = nn.Linear(cfg.dim, cfg.dim)
-        self.norm1 = LayerNorm(cfg)
-        self.pwff = PositionWiseFeedForward(cfg)
-        self.norm2 = LayerNorm(cfg)
+        self.proj = nn.Linear(cfg.dim, cfg.dim) # (preload)
+        self.norm1 = LayerNorm(cfg) #(preload)
+        self.pwff = PositionWiseFeedForward(cfg) #(preload)
+        self.norm2 = LayerNorm(cfg) #(preload)
         self.drop = nn.Dropout(cfg.p_drop_hidden)
 
     def forward(self, x, mask):
@@ -266,8 +268,6 @@ class Classifier(nn.Module):
                 mixup_layer = random.choice([0, self.layers + 1])
             else:
                 mixup_layer = -1
-
-            pdb.set_trace()
 
             h = self.transformer(
                 x=input_ids, seg=segment_ids, mask=input_mask, 
