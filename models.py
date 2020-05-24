@@ -267,6 +267,7 @@ class Classifier(nn.Module):
             else:
                 mixup_layer = -1
 
+            pdb.set_trace()
 
             h = self.transformer(
                 x=input_ids, seg=segment_ids, mask=input_mask, 
