@@ -42,6 +42,7 @@ parser.add_argument('--mode', default='train_eval', type=str)
 parser.add_argument('--model_cfg', default='config/bert_base.json', type=str)
 parser.add_argument('--hide_tqdm', action='store_true')
 parser.add_argument('--model', default='custom', type=str)
+parser.add_argument('--no_pretrained_pool', action='store_true')
 
 #Dataset
 parser.add_argument('--task', default="imdb", type=str)
@@ -329,7 +330,8 @@ def main():
                 mixup=cfg.sup_mixup,
                 shuffle_idx=sup_idx,
                 l=sup_l,
-                manifold_mixup = cfg.manifold_mixup
+                manifold_mixup = cfg.manifold_mixup,
+                no_pretrained_pool=cfg.no_pretrained_pool
             )
         else:
             hidden = model(
@@ -369,7 +371,8 @@ def main():
             if cfg.model == "bert":
                 ori_logits = model(
                     input_ids = ori_input_ids,
-                    attention_mask = ori_input_mask
+                    attention_mask = ori_input_mask,
+                    no_pretrained_pool=cfg.no_pretrained_pool
                 )
             else:
                 ori_logits = model(ori_input_ids, ori_segment_ids, ori_input_mask)
@@ -403,7 +406,8 @@ def main():
                 mixup=cfg.mixup,
                 shuffle_idx=idx,
                 l=l,
-                manifold_mixup = cfg.manifold_mixup
+                manifold_mixup = cfg.manifold_mixup,
+                no_pretrained_pool=cfg.no_pretrained_pool
             )
         else:
             hidden = model(

@@ -279,7 +279,8 @@ class Trainer(object):
                 if cfg.model == "bert":
                     logits = model(
                         input_ids = b_input_ids,
-                        attention_mask = b_input_mask
+                        attention_mask = b_input_mask,
+                        no_pretrained_pool = cfg.no_pretrained_pool
                     )
                 else:
                     logits = model(

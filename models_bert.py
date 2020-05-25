@@ -147,6 +147,9 @@ class BertModel(BertPreTrainedModel):
         self.encoder = BertEncoder(config)
         self.pooler = BertPooler(config)
 
+        self.fc = nn.Linear(config.hidden_size, config.hidden_size)
+        self.activ = nn.Tanh()
+
         self.init_weights()
 
     def get_input_embeddings(self):
@@ -177,7 +180,8 @@ class BertModel(BertPreTrainedModel):
         mixup=None,
         shuffle_idx=None,
         l=1,
-        mixup_layer=-1
+        mixup_layer=-1,
+        no_pretrained_pool=False
     ):
         r"""
     Return:
@@ -328,7 +332,11 @@ class BertModel(BertPreTrainedModel):
             mixup=mixup
         )
         sequence_output = encoder_outputs[0]
-        pooled_output = self.pooler(sequence_output)
+
+        if no_pretrained_pool:
+            pooled_output = self.activ(self.fc(sequence_output[:, 0]))
+        else:
+            pooled_output = self.pooler(sequence_output)
 
         if mixup_layer == self.layers + 1:
             cls_a, cls_b = pooled_output, pooled_output[shuffle_idx]
@@ -368,7 +376,8 @@ class BertForSequenceClassificationCustom(BertPreTrainedModel):
         mixup=None,
         shuffle_idx=None,
         l=1,
-        manifold_mixup=None
+        manifold_mixup=None,
+        no_pretrained_pool=False
     ):
         if input_h is None:
             if mixup == 'word':
@@ -392,7 +401,8 @@ class BertForSequenceClassificationCustom(BertPreTrainedModel):
                 mixup=mixup,
                 shuffle_idx=shuffle_idx,
                 l=l,
-                mixup_layer=mixup_layer
+                mixup_layer=mixup_layer,
+                no_pretrained_pool=no_pretrained_pool
             )
 
             pooled_output = outputs[1]
