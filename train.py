@@ -277,7 +277,6 @@ class Trainer(object):
 
             with torch.no_grad():     
                 if cfg.model == "bert":
-                    pdb.set_trace()
                     logits = model(
                         input_ids = b_input_ids,
                         attention_mask = b_input_mask,
