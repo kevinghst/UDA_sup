@@ -109,6 +109,8 @@ class Trainer(object):
         iter_bar = tqdm(self.unsup_iter, total=self.cfg.total_steps, disable=self.cfg.hide_tqdm) if ssl_mode \
               else tqdm(self.sup_iter, total=self.cfg.total_steps, disable=self.cfg.hide_tqdm)
 
+        start = time.time()
+
         for i, batch in enumerate(iter_bar):
             # Device assignment
             if ssl_mode:
@@ -201,12 +203,15 @@ class Trainer(object):
                 
                 if no_improvement == self.cfg.early_stopping:
                     print("Early stopped")
+                    total_time = time.time() - start
+                    print('Total Training Time: %d' %(total_time), end='\n')
                     break
 
 
             if self.cfg.total_steps and self.cfg.total_steps < global_step:
                 print('The total steps have been reached')
-                print('Average Loss %5.3f' % (loss_sum/(i+1)))
+                total_time = time.time() - start
+                print('Total Training Time: %d' %(total_time), end='\n') 
                 if get_acc:
                     if self.cfg.mixmatch_mode:
                         results = self.eval(get_acc, None, ema_model)
@@ -249,8 +254,6 @@ class Trainer(object):
             
 
     def validate(self):
-        t0 = time.time()
-
         print("Running validation")
 
         model = self.model
